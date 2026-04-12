@@ -1,0 +1,14 @@
+# Compiled binary
+uvc_ctrl
+*.o
+*.dSYM/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

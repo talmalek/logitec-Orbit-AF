@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit AF Controller</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface-2: #0f3460;
+    --accent: #e94560;
+    --green: #00e676;
+    --text: #eee;
+    --text-dim: #8892b0;
+    --border: #2a2a4a;
+    --radius: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  }
+
+  header {
+    width: 100%; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; white-space: nowrap; }
+  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .header-controls { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px; flex-wrap: wrap; }
+  .header-controls select {
+    flex: 1; min-width: 160px; padding: 8px 12px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer;
+  }
+
+  .ptz-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+  .toggle-track { position: relative; width: 44px; height: 24px; background: #555; border-radius: 12px; cursor: pointer; transition: background .3s; }
+  .toggle-track.on { background: var(--green); }
+  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform .2s; }
+  .toggle-track.on .toggle-thumb { transform: translateX(20px); }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background .3s; }
+  .status-dot.connected { background: var(--green); box-shadow: 0 0 8px #00e676aa; }
+  .status-dot.error { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+  main { flex: 1; width: 100%; max-width: 1280px; padding: 24px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+
+  .video-panel { flex: 1 1 640px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .video-container { width: 100%; max-width: 720px; aspect-ratio: 4/3; background: #000; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); position: relative; }
+  .video-container video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .video-overlay { position: absolute; top: 12px; left: 12px; font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,.6); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
+
+  .controls-panel { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .controls-panel.disabled { opacity: .35; pointer-events: none; }
+  .dpad { display: grid; grid-template-areas: ".  up  ." "left home right" ".  down ."; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 64px); gap: 6px; }
+  .dpad-btn {
+    width: 64px; height: 64px; border: none; border-radius: var(--radius);
+    background: var(--surface-2); color: var(--text); font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s, transform .1s; user-select: none; -webkit-user-select: none;
+  }
+  .dpad-btn:hover { background: var(--accent); }
+  .dpad-btn:active, .dpad-btn.active { background: var(--accent); transform: scale(.92); }
+  .dpad-btn[data-dir="up"] { grid-area: up; }
+  .dpad-btn[data-dir="down"] { grid-area: down; }
+  .dpad-btn[data-dir="left"] { grid-area: left; }
+  .dpad-btn[data-dir="right"] { grid-area: right; }
+  .dpad-btn[data-dir="home"] { grid-area: home; font-size: 14px; border-radius: 50%; }
+
+  .speed-control { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); }
+  .speed-control input[type="range"] { width: 150px; accent-color: var(--accent); }
+  .speed-label { min-width: 28px; text-align: center; color: var(--text); }
+  .kbd-hint { font-size: 11px; color: var(--text-dim); text-align: center; }
+  kbd { background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-family: inherit; font-size: 11px; }
+
+  .sidebar { flex: 0 1 300px; min-width: 260px; display: flex; flex-direction: column; gap: 16px; }
+  .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  .panel-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 14px; }
+
+  .setting-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .setting-row:last-child { margin-bottom: 0; }
+  .setting-row label { font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; }
+  .setting-row label .val { color: var(--text); }
+  .setting-row input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .setting-row select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
+
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 10px 24px; border-radius: var(--radius); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100; }
+  #toast.show { opacity: 1; }
+
+  .usb-banner { width: 100%; text-align: center; padding: 8px; font-size: 13px; display: none; }
+  .usb-banner.warning { display: block; background: #ff9800; color: #000; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-icon">&#9673;</div> Orbit AF Controller</div>
+  <div class="header-controls">
+    <select id="cameraSelect"><option value="">Loading cameras…</option></select>
+    <div class="ptz-toggle">
+      <span>PTZ</span>
+      <div class="toggle-track" id="ptzToggle" title="Toggle PTZ motor control"><div class="toggle-thumb"></div></div>
+      <div class="status-dot" id="statusDot" title="PTZ status"></div>
+    </div>
+  </div>
+</header>
+<div class="usb-banner" id="usbBanner"></div>
+
+<main>
+  <div class="video-panel">
+    <div class="video-container">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <div class="video-overlay" id="videoOverlay">No camera</div>
+    </div>
+    <div class="controls-panel disabled" id="controlsPanel">
+      <div class="dpad">
+        <button class="dpad-btn" data-dir="up" title="Tilt Up">&#9650;</button>
+        <button class="dpad-btn" data-dir="left" title="Pan Left">&#9664;</button>
+        <button class="dpad-btn" data-dir="home" title="Reset (Home)">&#8962;</button>
+        <button class="dpad-btn" data-dir="right" title="Pan Right">&#9654;</button>
+        <button class="dpad-btn" data-dir="down" title="Tilt Down">&#9660;</button>
+      </div>
+      <div class="speed-control">
+        <span>Speed</span>
+        <input type="range" id="speedSlider" min="1" max="10" value="3">
+        <span class="speed-label" id="speedLabel">3</span>
+      </div>
+      <div class="kbd-hint">
+        Use <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> arrow keys
+        &nbsp;&middot;&nbsp; <kbd>H</kbd> to reset
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel-card">
+      <h3>Resolution &amp; Frame Rate</h3>
+      <div class="setting-row">
+        <label><span>Format</span></label>
+        <select id="formatSelect"><option>–</option></select>
+      </div>
+    </div>
+    <div class="panel-card">
+      <h3 style="display:flex;justify-content:space-between;align-items:center">
+        Camera Settings
+        <button id="resetSettingsBtn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0">Default</button>
+      </h3>
+      <div id="settingsContainer">
+        <p style="font-size:13px;color:var(--text-dim)">Enable PTZ to load settings…</p>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+const PTZ_SERVER = 'http://localhost:9090';
+const videoEl       = document.getElementById('videoEl');
+const overlay       = document.getElementById('videoOverlay');
+const camSelect     = document.getElementById('cameraSelect');
+const statusDot     = document.getElementById('statusDot');
+const usbBanner     = document.getElementById('usbBanner');
+const ptzToggle     = document.getElementById('ptzToggle');
+const controlsPanel = document.getElementById('controlsPanel');
+const speedSlider   = document.getElementById('speedSlider');
+const speedLabel    = document.getElementById('speedLabel');
+const settingsContainer = document.getElementById('settingsContainer');
+const formatSelect  = document.getElementById('formatSelect');
+
+let currentStream = null;
+let ptzEnabled    = false;
+let ptzConnected  = false;
+let ptzPollTimer  = null;
+
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* ─── Camera enumeration ────────────────────────────────────────── */
+async function enumerateCameras() {
+  /* 1. Get a stream — this triggers the permission prompt */
+  let permStream = null;
+  try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch {}
+
+  fetchServerFormats().catch(() => {});
+
+  /* 2. Enumerate devices while stream is alive (needed for labels) */
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  let vids = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
+
+  /* 3. file:// fallback — Chrome may return empty deviceIds;
+        build the list from the active stream + enumerate count */
+  if (vids.length === 0 && permStream) {
+    const track = permStream.getVideoTracks()[0];
+    const s = track.getSettings();
+    vids = [{ deviceId: s.deviceId || '__default__', label: track.label || 'Camera 1', kind: 'videoinput' }];
+  } else if (vids.every(d => d.deviceId === '')) {
+    const allVids = devices.filter(d => d.kind === 'videoinput');
+    vids = allVids.map((d, i) => ({
+      deviceId: `__idx_${i}__`,
+      label: d.label || `Camera ${i + 1}`,
+      kind: 'videoinput',
+    }));
+  }
+
+  if (permStream) { permStream.getTracks().forEach(t => t.stop()); permStream = null; }
+
+  camSelect.innerHTML = '';
+  if (vids.length === 0) { camSelect.innerHTML = '<option value="">No cameras found</option>'; return; }
+  vids.forEach((d, i) => {
+    const opt = document.createElement('option');
+    opt.value = d.deviceId;
+    opt.textContent = d.label || `Camera ${i + 1}`;
+    camSelect.appendChild(opt);
+  });
+  const logi = vids.find(d => (d.label || '').toLowerCase().match(/046d:0994|orbit|logitech/));
+  if (logi) camSelect.value = logi.deviceId;
+  await startCamera(camSelect.value);
+
+  /* Re-enumerate to pick up labels Chrome exposes after an active stream */
+  const devicesRetry = await navigator.mediaDevices.enumerateDevices();
+  const vidsRetry = devicesRetry.filter(d => d.kind === 'videoinput');
+  if (vidsRetry.length > 0 && vidsRetry[0].label && vidsRetry[0].label !== camSelect.options[0]?.textContent) {
+    const savedVal = camSelect.value;
+    camSelect.innerHTML = '';
+    vidsRetry.forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId || `__idx_${i}__`;
+      opt.textContent = d.label || `Camera ${i + 1}`;
+      camSelect.appendChild(opt);
+    });
+    if ([...camSelect.options].some(o => o.value === savedVal)) camSelect.value = savedVal;
+  }
+}
+
+/* ─── Start camera ──────────────────────────────────────────────── */
+let currentDeviceId = null;
+
+async function startCamera(deviceId, w, h, fps) {
+  if (!deviceId) return;
+
+  /* If same device and we have a stream, use applyConstraints (no permission prompt) */
+  if (currentStream && deviceId === currentDeviceId) {
+    const track = currentStream.getVideoTracks()[0];
+    try {
+      const c = {};
+      if (w && h) { c.width = { exact: w }; c.height = { exact: h }; }
+      if (fps) c.frameRate = { ideal: fps };
+      await track.applyConstraints(c);
+      const s = track.getSettings();
+      overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+      return;
+    } catch { /* fall through to full getUserMedia */ }
+  }
+
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
+
+  const vc = {};
+  if (deviceId && !deviceId.startsWith('__')) vc.deviceId = { exact: deviceId };
+  if (w && h) { vc.width = { ideal: w }; vc.height = { ideal: h }; }
+  else { vc.width = { ideal: 640 }; vc.height = { ideal: 480 }; }
+  if (fps) vc.frameRate = { ideal: fps };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: vc });
+    currentStream = stream;
+    currentDeviceId = deviceId;
+    videoEl.srcObject = stream;
+    const track = stream.getVideoTracks()[0];
+    const s = track.getSettings();
+    overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+    await probeAndBuildFormats(track, s);
+  } catch (err) {
+    overlay.textContent = 'Camera error';
+    toast('Failed: ' + err.message);
+  }
+}
+camSelect.addEventListener('change', () => { currentDeviceId = null; startCamera(camSelect.value); });
+navigator.mediaDevices.addEventListener('devicechange', enumerateCameras);
+
+/* ─── Resolution & FPS selector ──────────────────────────────────── */
+let serverFormats = {};
+
+async function fetchServerFormats() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/formats`, { signal: AbortSignal.timeout(1500) });
+    const data = await res.json();
+    (data.cameras || []).forEach(cam => {
+      serverFormats[cam.name.toLowerCase()] = cam.formats;
+    });
+  } catch {}
+}
+
+function matchServerFormats(label) {
+  const lower = label.toLowerCase();
+  let bestFmts = null, bestScore = 0;
+  for (const [name, fmts] of Object.entries(serverFormats)) {
+    let score = 0;
+    if (lower === name) return fmts;
+    if (lower.includes(name)) score = name.length;
+    else if (name.includes(lower)) score = lower.length;
+    else {
+      name.split(/\s+/).filter(w => w.length > 3).forEach(w => { if (lower.includes(w)) score += w.length; });
+    }
+    if (score > bestScore) { bestScore = score; bestFmts = fmts; }
+  }
+  return bestFmts;
+}
+
+const PROBE_RESOLUTIONS = [
+  [1920,1080],[1600,1200],[1552,1552],[1328,1760],[1760,1328],
+  [1280,720],[1080,1920],[960,720],[800,600],[640,480],
+  [352,288],[320,240],[176,144],[160,120]
+];
+const PROBE_FPS = [30,25,20,15,10,5];
+
+let formatCache = {};
+
+async function probeFormats(track) {
+  const cap = track.getCapabilities ? track.getCapabilities() : null;
+  const wMax = cap?.width?.max || 9999;
+  const hMax = cap?.height?.max || 9999;
+  const origSettings = track.getSettings();
+  const formats = [];
+
+  for (const [w, h] of PROBE_RESOLUTIONS) {
+    if (w > wMax || h > hMax) continue;
+    try {
+      await track.applyConstraints({ width: { exact: w }, height: { exact: h }, frameRate: { ideal: 30 } });
+      const s = track.getSettings();
+      if (s.width === w && s.height === h) {
+        const maxFps = Math.round(s.frameRate);
+        PROBE_FPS.forEach(fps => { if (fps <= maxFps) formats.push([w, h, fps]); });
+      }
+    } catch {}
+  }
+
+  /* Restore original resolution */
+  try { await track.applyConstraints({ width: { exact: origSettings.width }, height: { exact: origSettings.height }, frameRate: { ideal: origSettings.frameRate } }); } catch {}
+
+  return formats;
+}
+
+async function probeAndBuildFormats(track, current) {
+  const label = camSelect.selectedOptions[0]?.textContent || '';
+
+  /* Prefer server formats if available */
+  let formats = matchServerFormats(label);
+
+  if (!formats || formats.length === 0) {
+    const cacheKey = label || current.deviceId || 'default';
+    if (formatCache[cacheKey]) {
+      formats = formatCache[cacheKey];
+    } else {
+      formatSelect.innerHTML = '<option>Detecting formats…</option>';
+      formats = await probeFormats(track);
+      if (formats.length > 0) formatCache[cacheKey] = formats;
+    }
+  }
+
+  buildFormatSelect(formats, current);
+}
+
+function buildFormatSelect(formats, current) {
+  formatSelect.innerHTML = '';
+  const curKey = `${current.width}x${current.height}@${Math.round(current.frameRate)}`;
+  let hasCurrent = false;
+
+  if (formats && formats.length > 0) {
+    formats.forEach(([w, h, fps]) => {
+      const opt = document.createElement('option');
+      opt.value = `${w},${h},${fps}`;
+      opt.textContent = `${w} × ${h} @ ${fps} fps`;
+      const key = `${w}x${h}@${fps}`;
+      if (key === curKey) { opt.selected = true; hasCurrent = true; }
+      formatSelect.appendChild(opt);
+    });
+  }
+
+  if (!hasCurrent) {
+    const opt = document.createElement('option');
+    opt.value = `${current.width},${current.height},${Math.round(current.frameRate)}`;
+    opt.textContent = `${current.width} × ${current.height} @ ${Math.round(current.frameRate)} fps (current)`;
+    opt.selected = true;
+    formatSelect.prepend(opt);
+  }
+}
+
+formatSelect.addEventListener('change', async () => {
+  const [w, h, fps] = formatSelect.value.split(',').map(Number);
+  const track = currentStream?.getVideoTracks()[0];
+  if (!track) return;
+
+  try {
+    await track.applyConstraints({ width: { exact: w }, height: { exact: h }, frameRate: { ideal: fps } });
+    const s = track.getSettings();
+    overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+  } catch (err) {
+    toast('Format not supported: ' + err.message);
+  }
+});
+
+/* ─── PTZ toggle ────────────────────────────────────────────────── */
+async function checkPTZServer() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/status`, { signal: AbortSignal.timeout(2000) });
+    const data = await res.json();
+    return data.connected === true;
+  } catch { return false; }
+}
+
+function setPtzUI(connected) {
+  ptzConnected = connected;
+  statusDot.className = 'status-dot ' + (connected ? 'connected' : ptzEnabled ? 'error' : '');
+  controlsPanel.classList.toggle('disabled', !connected);
+  if (ptzEnabled && !connected) {
+    usbBanner.className = 'usb-banner warning';
+    usbBanner.textContent = 'PTZ server not reachable — double-click start_ptz.command to start it';
+  } else {
+    usbBanner.className = 'usb-banner';
+  }
+}
+
+ptzToggle.addEventListener('click', async () => {
+  ptzEnabled = !ptzEnabled;
+  ptzToggle.classList.toggle('on', ptzEnabled);
+  if (ptzEnabled) {
+    toast('Connecting to PTZ…', 1500);
+    const ok = await checkPTZServer();
+    setPtzUI(ok);
+    if (ok) {
+      toast('PTZ connected');
+      loadSettings();
+      ptzPollTimer = setInterval(async () => { const s = await checkPTZServer(); setPtzUI(s); }, 10000);
+    } else {
+      toast('PTZ server not found — double-click start_ptz.command');
+    }
+  } else {
+    clearInterval(ptzPollTimer); ptzPollTimer = null;
+    ptzConnected = false; setPtzUI(false);
+    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">Enable PTZ to load settings…</p>';
+    toast('PTZ disabled');
+  }
+});
+
+if (window.location.port === '9090' || window.location.origin.includes('localhost:9090')) {
+  ptzEnabled = true;
+  ptzToggle.classList.add('on');
+  checkPTZServer().then(ok => {
+    setPtzUI(ok);
+    if (ok) { loadSettings(); ptzPollTimer = setInterval(async () => setPtzUI(await checkPTZServer()), 10000); }
+  });
+}
+
+/* ─── PTZ commands ──────────────────────────────────────────────── */
+async function sendPTZ(pan, tilt) {
+  if (!ptzConnected) return;
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/ptz`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pan, tilt }),
+    });
+    const data = await res.json();
+    if (!data.ok) toast('PTZ error');
+  } catch { toast('PTZ request failed'); }
+}
+async function sendReset() {
+  if (!ptzConnected) return;
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/reset`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) toast('Reset to center'); else toast('Reset failed');
+  } catch { toast('Reset request failed'); }
+}
+
+const dirMap = {
+  up: () => sendPTZ(0, speed()), down: () => sendPTZ(0, -speed()),
+  left: () => sendPTZ(-speed(), 0), right: () => sendPTZ(speed(), 0),
+  home: () => sendReset(),
+};
+function speed() { return parseInt(speedSlider.value); }
+speedSlider.addEventListener('input', () => { speedLabel.textContent = speedSlider.value; });
+
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('mousedown', e => { e.preventDefault(); btn.classList.add('active'); });
+  btn.addEventListener('mouseup', () => btn.classList.remove('active'));
+  btn.addEventListener('mouseleave', () => btn.classList.remove('active'));
+  btn.addEventListener('click', () => { if (dirMap[dir]) dirMap[dir](); });
+  let hold = null;
+  btn.addEventListener('mousedown', () => { if (dir === 'home') return; hold = setInterval(() => { if (dirMap[dir]) dirMap[dir](); }, 250); });
+  const stop = () => { clearInterval(hold); hold = null; };
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+});
+
+const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyH: 'home' };
+const activeKeys = new Set();
+let keyRepeat = null;
+function processKeys() { activeKeys.forEach(d => { if (dirMap[d]) dirMap[d](); }); }
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const dir = keyMap[e.code]; if (!dir) return; e.preventDefault();
+  const btn = document.querySelector(`.dpad-btn[data-dir="${dir}"]`); if (btn) btn.classList.add('active');
+  if (!activeKeys.has(dir)) { activeKeys.add(dir); processKeys(); if (!keyRepeat && dir !== 'home') keyRepeat = setInterval(processKeys, 250); }
+});
+document.addEventListener('keyup', e => {
+  const dir = keyMap[e.code]; if (!dir) return;
+  const btn = document.querySelector(`.dpad-btn[data-dir="${dir}"]`); if (btn) btn.classList.remove('active');
+  activeKeys.delete(dir);
+  if (activeKeys.size === 0 && keyRepeat) { clearInterval(keyRepeat); keyRepeat = null; }
+});
+
+/* ─── Camera settings (via USB server) ──────────────────────────── */
+
+const SETTING_LABELS = {
+  brightness: 'Brightness', contrast: 'Contrast', saturation: 'Saturation',
+  sharpness: 'Sharpness',
+};
+
+async function loadSettings() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/settings`);
+    const data = await res.json();
+    buildSettingsUI(data.settings || []);
+  } catch {
+    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">Failed to load settings</p>';
+  }
+}
+
+function buildSettingsUI(settings) {
+  settingsContainer.innerHTML = '';
+  if (settings.length === 0) {
+    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">No adjustable settings found</p>';
+    return;
+  }
+
+  settings.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'setting-row';
+    const label = document.createElement('label');
+    const displayName = SETTING_LABELS[s.name] || s.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    label.innerHTML = `<span>${displayName}</span><span class="val" id="sval-${s.name}">${s.current}</span>`;
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = s.min;
+    input.max = s.max;
+    input.value = s.current;
+
+    let debounce = null;
+    input.addEventListener('input', () => {
+      document.getElementById(`sval-${s.name}`).textContent = input.value;
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        fetch(`${PTZ_SERVER}/api/setting`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: s.name, value: parseInt(input.value) }),
+        }).catch(() => toast(`Failed to set ${displayName}`));
+      }, 150);
+    });
+
+    row.appendChild(label);
+    row.appendChild(input);
+    settingsContainer.appendChild(row);
+  });
+}
+
+/* ─── Reset settings to defaults ────────────────────────────────── */
+document.getElementById('resetSettingsBtn').addEventListener('click', async () => {
+  if (!ptzConnected) { toast('PTZ not connected'); return; }
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/settings/reset`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) { toast('Settings reset to defaults'); loadSettings(); }
+    else toast('Reset failed');
+  } catch { toast('Reset request failed'); }
+});
+
+/* ─── Init ──────────────────────────────────────────────────────── */
+enumerateCameras();
+</script>
+</body>
+</html>
