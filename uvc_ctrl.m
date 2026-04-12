@@ -438,6 +438,9 @@ static void handle_get_formats(int fd) {
 
 /* ── HTTP request handler ──────────────────────────────────────── */
 
+static char *g_img_data = NULL;
+static size_t g_img_len = 0;
+
 static void handle_request(int fd, const char *html, size_t html_len) {
     char buf[HTTP_BUF];
     ssize_t n = recv(fd, buf, sizeof(buf) - 1, 0);
@@ -459,6 +462,12 @@ static void handle_request(int fd, const char *html, size_t html_len) {
     /* GET / */
     if (strcmp(method, "GET") == 0 && strcmp(path, "/") == 0) {
         http_respond(fd, 200, "text/html; charset=utf-8", html, html_len);
+        return;
+    }
+
+    /* GET /tv-bg.png */
+    if (strcmp(method, "GET") == 0 && strcmp(path, "/tv-bg.png") == 0 && g_img_data) {
+        http_respond(fd, 200, "image/png", g_img_data, g_img_len);
         return;
     }
 
@@ -544,6 +553,16 @@ static int cmd_serve(const char *argv0) {
         fprintf(stderr, "error: cannot read %s\n", html_path);
         return 1;
     }
+
+    /* Load TV background image */
+    char img_path[1024];
+    if (slash) {
+        snprintf(img_path, sizeof(img_path), "%.*s/tv-bg.png", (int)(slash - argv0), argv0);
+    } else {
+        snprintf(img_path, sizeof(img_path), "tv-bg.png");
+    }
+    g_img_data = slurp_file(img_path, &g_img_len);
+    if (!g_img_data) fprintf(stderr, "note: tv-bg.png not found (UI will still work via file://)\n");
 
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) { perror("socket"); return 1; }

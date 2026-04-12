@@ -5,156 +5,480 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orbit AF Controller</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
+
   :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --surface-2: #0f3460;
-    --accent: #e94560;
-    --green: #00e676;
-    --text: #eee;
-    --text-dim: #8892b0;
-    --border: #2a2a4a;
-    --radius: 10px;
-    --shadow: 0 4px 24px rgba(0,0,0,.4);
+    --bg: #87CEEB;
+    --cream: #F5E6D0;
+    --wood: #8B5E3C;
+    --wood-dark: #5C3A1E;
+    --accent: #D4A44C;
+    --green: #4CAF50;
+    --red: #e74c3c;
+    --metal: #A0A0A0;
+    --metal-light: #D8D8D8;
+    --metal-dark: #606060;
   }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg); color: var(--text);
-    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    padding: 20px;
   }
 
-  header {
-    width: 100%; background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 24px; display: flex; align-items: center;
-    justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  }
-  .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; white-space: nowrap; }
-  .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .header-controls { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px; flex-wrap: wrap; }
-  .header-controls select {
-    flex: 1; min-width: 160px; padding: 8px 12px; border-radius: var(--radius);
-    border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; cursor: pointer;
+  /* ── TV container ── */
+  .tv {
+    position: relative;
+    width: 700px;
+    height: 700px;
+    max-width: 95vw;
+    max-height: 95vw;
+    flex-shrink: 0;
   }
 
-  .ptz-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); white-space: nowrap; }
-  .toggle-track { position: relative; width: 44px; height: 24px; background: #555; border-radius: 12px; cursor: pointer; transition: background .3s; }
-  .toggle-track.on { background: var(--green); }
-  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform .2s; }
-  .toggle-track.on .toggle-thumb { transform: translateX(20px); }
-  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background .3s; }
-  .status-dot.connected { background: var(--green); box-shadow: 0 0 8px #00e676aa; }
-  .status-dot.error { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .tv-img {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    z-index: 1;
+  }
 
-  main { flex: 1; width: 100%; max-width: 1280px; padding: 24px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  /* ── Video positioned over the screen ── */
+  .screen-overlay {
+    position: absolute;
+    top: 29.5%;
+    left: 15.5%;
+    width: 50%;
+    height: 41%;
+    overflow: hidden;
+    border-radius: 8px;
+    z-index: 2;
+  }
 
-  .video-panel { flex: 1 1 640px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-  .video-container { width: 100%; max-width: 720px; aspect-ratio: 4/3; background: #000; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); position: relative; }
-  .video-container video { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .video-overlay { position: absolute; top: 12px; left: 12px; font-size: 11px; color: var(--text-dim); background: rgba(0,0,0,.6); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
+  .screen-overlay video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #1a1a1a;
+  }
 
-  .controls-panel { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-  .controls-panel.disabled { opacity: .35; pointer-events: none; }
-  .dpad { display: grid; grid-template-areas: ".  up  ." "left home right" ".  down ."; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(3, 64px); gap: 6px; }
+  .screen-overlay .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px,
+      rgba(0,0,0,.04) 3px, rgba(0,0,0,.04) 6px
+    );
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .screen-overlay .glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 25%, rgba(255,255,255,.12) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  .video-info {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 10px;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    background: rgba(0,0,0,.55);
+    padding: 2px 7px;
+    border-radius: 3px;
+    z-index: 5;
+  }
+
+  /* ── Each control is independently positioned inside .tv ── */
+  .tv-el {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tv-el.disabled .dpad,
+  .tv-el.disabled .speed-row { opacity: .3; pointer-events: none; }
+
+  /* Camera selector (styled as a knob label) */
+  .cam-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .ctrl-lbl {
+    font-size: 7px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(60,40,20,.7);
+    text-align: center;
+  }
+  .cam-wrap select {
+    width: 90%;
+    padding: 2px 3px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,.25);
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(2px);
+    color: #3a2a1a;
+    font-size: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  /* D-Pad */
+  .dpad-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .dpad {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: conic-gradient(from 45deg,
+      #b0b0b0 0deg, #d0d0d0 45deg, #b0b0b0 90deg,
+      #808080 135deg, #b0b0b0 180deg,
+      #d0d0d0 225deg, #b0b0b0 270deg,
+      #808080 315deg, #b0b0b0 360deg
+    );
+    box-shadow:
+      0 3px 10px rgba(0,0,0,.4),
+      0 1px 0 rgba(255,255,255,.2),
+      inset 0 0 12px rgba(0,0,0,.15);
+  }
+
+  .dpad::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+      linear-gradient(0deg, transparent 40%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.2) 60%, transparent 60%),
+      linear-gradient(90deg, transparent 40%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.2) 60%, transparent 60%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
   .dpad-btn {
-    width: 64px; height: 64px; border: none; border-radius: var(--radius);
-    background: var(--surface-2); color: var(--text); font-size: 22px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background .15s, transform .1s; user-select: none; -webkit-user-select: none;
+    position: absolute;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    transition: all .1s;
+    -webkit-user-select: none;
+    user-select: none;
+    z-index: 2;
+    padding: 0;
   }
-  .dpad-btn:hover { background: var(--accent); }
-  .dpad-btn:active, .dpad-btn.active { background: var(--accent); transform: scale(.92); }
-  .dpad-btn[data-dir="up"] { grid-area: up; }
-  .dpad-btn[data-dir="down"] { grid-area: down; }
-  .dpad-btn[data-dir="left"] { grid-area: left; }
-  .dpad-btn[data-dir="right"] { grid-area: right; }
-  .dpad-btn[data-dir="home"] { grid-area: home; font-size: 14px; border-radius: 50%; }
+  .dpad-btn:hover { color: #111; }
+  .dpad-btn:active, .dpad-btn.active { transform: scale(.88); color: var(--wood-dark); }
 
-  .speed-control { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); }
-  .speed-control input[type="range"] { width: 150px; accent-color: var(--accent); }
-  .speed-label { min-width: 28px; text-align: center; color: var(--text); }
-  .kbd-hint { font-size: 11px; color: var(--text-dim); text-align: center; }
-  kbd { background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-family: inherit; font-size: 11px; }
+  .dpad-btn[data-dir="up"]    { top: 1px; left: 50%; transform: translateX(-50%); width: 24px; height: 18px; font-size: 9px; }
+  .dpad-btn[data-dir="down"]  { bottom: 1px; left: 50%; transform: translateX(-50%); width: 24px; height: 18px; font-size: 9px; }
+  .dpad-btn[data-dir="left"]  { left: 1px; top: 50%; transform: translateY(-50%); width: 18px; height: 24px; font-size: 9px; }
+  .dpad-btn[data-dir="right"] { right: 1px; top: 50%; transform: translateY(-50%); width: 18px; height: 24px; font-size: 9px; }
+  .dpad-btn[data-dir="up"]:active, .dpad-btn[data-dir="up"].active { transform: translateX(-50%) scale(.88); }
+  .dpad-btn[data-dir="down"]:active, .dpad-btn[data-dir="down"].active { transform: translateX(-50%) scale(.88); }
+  .dpad-btn[data-dir="left"]:active, .dpad-btn[data-dir="left"].active { transform: translateY(-50%) scale(.88); }
+  .dpad-btn[data-dir="right"]:active, .dpad-btn[data-dir="right"].active { transform: translateY(-50%) scale(.88); }
 
-  .sidebar { flex: 0 1 300px; min-width: 260px; display: flex; flex-direction: column; gap: 16px; }
-  .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
-  .panel-card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 14px; }
+  .dpad-btn[data-dir="home"] {
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--metal-light), var(--metal));
+    box-shadow: 0 2px 4px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.4);
+    font-size: 10px;
+  }
+  .dpad-btn[data-dir="home"]:active, .dpad-btn[data-dir="home"].active {
+    transform: translate(-50%, -50%) scale(.9);
+    box-shadow: 0 1px 2px rgba(0,0,0,.3), inset 0 2px 3px rgba(0,0,0,.2);
+  }
 
-  .setting-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  /* Speed */
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    width: 90%;
+    justify-content: center;
+  }
+  .speed-row input[type="range"] { width: 40px; accent-color: var(--accent); height: 2px; }
+  .speed-row span { font-size: 5px; color: rgba(60,40,20,.6); font-weight: 600; }
+
+  /* Format selector */
+  .fmt-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .fmt-wrap select {
+    width: 90%;
+    padding: 2px 3px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,.25);
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(2px);
+    color: #3a2a1a;
+    font-size: 7px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  /* PTZ toggle row */
+  .ptz-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+  }
+  .ptz-lbl { font-size: 7px; color: rgba(60,40,20,.7); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .toggle-track {
+    position: relative;
+    width: 28px;
+    height: 14px;
+    background: linear-gradient(to bottom, #666, #444);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background .3s;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.4);
+  }
+  .toggle-track.on { background: linear-gradient(to bottom, #5a5, var(--green)); }
+  .toggle-thumb {
+    position: absolute;
+    top: 1.5px; left: 1.5px;
+    width: 11px; height: 11px;
+    background: radial-gradient(circle at 40% 35%, #fff, #ccc);
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  .toggle-track.on .toggle-thumb { transform: translateX(14px); }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #666;
+    transition: background .3s;
+  }
+  .status-dot.connected { background: var(--green); box-shadow: 0 0 5px #4CAF50aa; }
+  .status-dot.error { background: var(--red); box-shadow: 0 0 5px var(--red); }
+
+  /* Settings button */
+  .settings-btn {
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,.25);
+    background: rgba(255,255,255,.3);
+    color: rgba(60,40,20,.8);
+    font-size: 7px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .settings-btn:hover { background: rgba(255,255,255,.5); }
+  .settings-btn .gear { font-size: 10px; }
+
+  /* Disabled state */
+  .tv-el.disabled .dpad,
+  .tv-el.disabled .speed-row { opacity: .3; pointer-events: none; }
+
+  /* ── Settings drawer (below the TV) ── */
+  .settings-drawer {
+    margin-top: 20px;
+    background: linear-gradient(145deg, #A97C50, #8B5E3C, #5C3A1E);
+    border-radius: 16px;
+    padding: 20px 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.1);
+    width: 500px;
+    max-width: 90vw;
+    display: none;
+  }
+  .settings-drawer.open { display: block; }
+
+  .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .settings-header h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--cream);
+    text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  .settings-header button {
+    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,.2);
+    background: var(--cream);
+    color: #3a2a1a;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .setting-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 12px; }
   .setting-row:last-child { margin-bottom: 0; }
-  .setting-row label { font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; }
-  .setting-row label .val { color: var(--text); }
+  .setting-row label {
+    font-size: 11px; color: var(--cream);
+    display: flex; justify-content: space-between;
+    text-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  .setting-row label .val { color: #fff; font-weight: 600; }
   .setting-row input[type="range"] { width: 100%; accent-color: var(--accent); }
-  .setting-row select { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
 
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; padding: 10px 24px; border-radius: var(--radius); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100; }
+  /* ── Banner & Toast ── */
+  .usb-banner {
+    width: 100%; max-width: 700px; text-align: center;
+    padding: 8px; font-size: 12px; display: none;
+    border-radius: 8px; margin-bottom: 8px;
+  }
+  .usb-banner.warning { display: block; background: #ff9800; color: #000; }
+
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(40,25,10,.9); color: var(--cream);
+    padding: 10px 24px; border-radius: 10px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  }
   #toast.show { opacity: 1; }
 
-  .usb-banner { width: 100%; text-align: center; padding: 8px; font-size: 13px; display: none; }
-  .usb-banner.warning { display: block; background: #ff9800; color: #000; }
+  /* ── Keyboard hint (below TV) ── */
+  .kbd-hint {
+    margin-top: 10px;
+    font-size: 10px;
+    color: rgba(0,0,0,.35);
+    text-align: center;
+  }
+  kbd {
+    background: rgba(255,255,255,.4);
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: inherit;
+    font-size: 10px;
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo"><div class="logo-icon">&#9673;</div> Orbit AF Controller</div>
-  <div class="header-controls">
-    <select id="cameraSelect"><option value="">Loading cameras…</option></select>
-    <div class="ptz-toggle">
-      <span>PTZ</span>
-      <div class="toggle-track" id="ptzToggle" title="Toggle PTZ motor control"><div class="toggle-thumb"></div></div>
-      <div class="status-dot" id="statusDot" title="PTZ status"></div>
-    </div>
-  </div>
-</header>
 <div class="usb-banner" id="usbBanner"></div>
 
-<main>
-  <div class="video-panel">
-    <div class="video-container">
-      <video id="videoEl" autoplay playsinline muted></video>
-      <div class="video-overlay" id="videoOverlay">No camera</div>
+<div class="tv">
+  <img class="tv-img" id="el-tvimg" src="tv-bg.png" alt="TV" draggable="false" style="top:-4.5%;left:-4%;width:113.5%;height:104.5%">
+
+  <!-- Video overlay on the screen -->
+  <div class="screen-overlay" id="el-video" style="top:26.5%;left:17.5%;width:55.5%;height:40.5%">
+    <video id="videoEl" autoplay playsinline muted></video>
+    <div class="scanlines"></div>
+    <div class="glare"></div>
+    <div class="video-info" id="videoOverlay">No camera</div>
+  </div>
+
+  <!-- Each control is independently positioned -->
+  <div class="tv-el" id="el-camera" data-label="Camera Dropdown" style="top:13.5%;left:78.5%;width:15%">
+    <div class="cam-wrap">
+      <span class="ctrl-lbl">Camera</span>
+      <select id="cameraSelect"><option value="">Loading…</option></select>
     </div>
-    <div class="controls-panel disabled" id="controlsPanel">
+  </div>
+
+  <div class="tv-el" id="el-dpad" data-label="D-Pad" style="top:38.5%;left:78%;width:15.5%">
+    <div class="dpad-wrap">
       <div class="dpad">
         <button class="dpad-btn" data-dir="up" title="Tilt Up">&#9650;</button>
         <button class="dpad-btn" data-dir="left" title="Pan Left">&#9664;</button>
-        <button class="dpad-btn" data-dir="home" title="Reset (Home)">&#8962;</button>
+        <button class="dpad-btn" data-dir="home" title="Home">&#8962;</button>
         <button class="dpad-btn" data-dir="right" title="Pan Right">&#9654;</button>
         <button class="dpad-btn" data-dir="down" title="Tilt Down">&#9660;</button>
-      </div>
-      <div class="speed-control">
-        <span>Speed</span>
-        <input type="range" id="speedSlider" min="1" max="10" value="3">
-        <span class="speed-label" id="speedLabel">3</span>
-      </div>
-      <div class="kbd-hint">
-        Use <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> arrow keys
-        &nbsp;&middot;&nbsp; <kbd>H</kbd> to reset
       </div>
     </div>
   </div>
 
-  <div class="sidebar">
-    <div class="panel-card">
-      <h3>Resolution &amp; Frame Rate</h3>
-      <div class="setting-row">
-        <label><span>Format</span></label>
-        <select id="formatSelect"><option>–</option></select>
-      </div>
-    </div>
-    <div class="panel-card">
-      <h3 style="display:flex;justify-content:space-between;align-items:center">
-        Camera Settings
-        <button id="resetSettingsBtn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0">Default</button>
-      </h3>
-      <div id="settingsContainer">
-        <p style="font-size:13px;color:var(--text-dim)">Enable PTZ to load settings…</p>
-      </div>
+  <div class="tv-el" id="el-speed" data-label="Speed Slider" style="top:51%;left:78%;width:15%">
+    <div class="speed-row">
+      <span>Slow</span>
+      <input type="range" id="speedSlider" min="1" max="10" value="3">
+      <span>Fast</span>
     </div>
   </div>
-</main>
+
+  <div class="tv-el" id="el-resolution" data-label="Resolution" style="top:56.5%;left:78%;width:15%">
+    <div class="fmt-wrap">
+      <span class="ctrl-lbl">Resolution</span>
+      <select id="formatSelect"><option>–</option></select>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-ptz" data-label="PTZ Toggle" style="top:26%;left:78.5%;width:13%">
+    <div class="ptz-row">
+      <span class="ptz-lbl">PTZ</span>
+      <div class="toggle-track" id="ptzToggle" title="Toggle PTZ"><div class="toggle-thumb"></div></div>
+      <div class="status-dot" id="statusDot"></div>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-settings" data-label="Settings Button" style="top:63%;left:78.5%;width:14%">
+    <button class="settings-btn" id="settingsBtn">
+      <span class="gear">&#9881;</span> Settings
+    </button>
+  </div>
+</div>
+
+<div class="kbd-hint">
+  <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> arrows
+  &middot; <kbd>H</kbd> home
+</div>
+
+<!-- Settings drawer -->
+<div class="settings-drawer" id="settingsDrawer">
+  <div class="settings-header">
+    <h3>Camera Settings</h3>
+    <button id="resetSettingsBtn">Reset Defaults</button>
+  </div>
+  <div id="settingsContainer">
+    <p style="font-size:12px;color:var(--cream);opacity:.6">Enable PTZ to load settings…</p>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -165,11 +489,11 @@ const camSelect     = document.getElementById('cameraSelect');
 const statusDot     = document.getElementById('statusDot');
 const usbBanner     = document.getElementById('usbBanner');
 const ptzToggle     = document.getElementById('ptzToggle');
-const controlsPanel = document.getElementById('controlsPanel');
+const controlsPanel = document.getElementById('el-dpad');
 const speedSlider   = document.getElementById('speedSlider');
-const speedLabel    = document.getElementById('speedLabel');
 const settingsContainer = document.getElementById('settingsContainer');
 const formatSelect  = document.getElementById('formatSelect');
+const settingsDrawer = document.getElementById('settingsDrawer');
 
 let currentStream = null;
 let ptzEnabled    = false;
@@ -183,20 +507,20 @@ function toast(msg, ms = 2500) {
   el._t = setTimeout(() => el.classList.remove('show'), ms);
 }
 
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  settingsDrawer.classList.toggle('open');
+});
+
 /* ─── Camera enumeration ────────────────────────────────────────── */
 async function enumerateCameras() {
-  /* 1. Get a stream — this triggers the permission prompt */
   let permStream = null;
   try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch {}
 
   fetchServerFormats().catch(() => {});
 
-  /* 2. Enumerate devices while stream is alive (needed for labels) */
   const devices = await navigator.mediaDevices.enumerateDevices();
   let vids = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
 
-  /* 3. file:// fallback — Chrome may return empty deviceIds;
-        build the list from the active stream + enumerate count */
   if (vids.length === 0 && permStream) {
     const track = permStream.getVideoTracks()[0];
     const s = track.getSettings();
@@ -213,7 +537,7 @@ async function enumerateCameras() {
   if (permStream) { permStream.getTracks().forEach(t => t.stop()); permStream = null; }
 
   camSelect.innerHTML = '';
-  if (vids.length === 0) { camSelect.innerHTML = '<option value="">No cameras found</option>'; return; }
+  if (vids.length === 0) { camSelect.innerHTML = '<option value="">No cameras</option>'; return; }
   vids.forEach((d, i) => {
     const opt = document.createElement('option');
     opt.value = d.deviceId;
@@ -224,7 +548,6 @@ async function enumerateCameras() {
   if (logi) camSelect.value = logi.deviceId;
   await startCamera(camSelect.value);
 
-  /* Re-enumerate to pick up labels Chrome exposes after an active stream */
   const devicesRetry = await navigator.mediaDevices.enumerateDevices();
   const vidsRetry = devicesRetry.filter(d => d.kind === 'videoinput');
   if (vidsRetry.length > 0 && vidsRetry[0].label && vidsRetry[0].label !== camSelect.options[0]?.textContent) {
@@ -246,7 +569,6 @@ let currentDeviceId = null;
 async function startCamera(deviceId, w, h, fps) {
   if (!deviceId) return;
 
-  /* If same device and we have a stream, use applyConstraints (no permission prompt) */
   if (currentStream && deviceId === currentDeviceId) {
     const track = currentStream.getVideoTracks()[0];
     try {
@@ -257,7 +579,7 @@ async function startCamera(deviceId, w, h, fps) {
       const s = track.getSettings();
       overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
       return;
-    } catch { /* fall through to full getUserMedia */ }
+    } catch {}
   }
 
   if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
@@ -265,7 +587,7 @@ async function startCamera(deviceId, w, h, fps) {
   const vc = {};
   if (deviceId && !deviceId.startsWith('__')) vc.deviceId = { exact: deviceId };
   if (w && h) { vc.width = { ideal: w }; vc.height = { ideal: h }; }
-  else { vc.width = { ideal: 640 }; vc.height = { ideal: 480 }; }
+  else { vc.width = { ideal: 9999 }; vc.height = { ideal: 9999 }; }
   if (fps) vc.frameRate = { ideal: fps };
 
   try {
@@ -342,16 +664,12 @@ async function probeFormats(track) {
     } catch {}
   }
 
-  /* Restore original resolution */
   try { await track.applyConstraints({ width: { exact: origSettings.width }, height: { exact: origSettings.height }, frameRate: { ideal: origSettings.frameRate } }); } catch {}
-
   return formats;
 }
 
 async function probeAndBuildFormats(track, current) {
   const label = camSelect.selectedOptions[0]?.textContent || '';
-
-  /* Prefer server formats if available */
   let formats = matchServerFormats(label);
 
   if (!formats || formats.length === 0) {
@@ -359,7 +677,7 @@ async function probeAndBuildFormats(track, current) {
     if (formatCache[cacheKey]) {
       formats = formatCache[cacheKey];
     } else {
-      formatSelect.innerHTML = '<option>Detecting formats…</option>';
+      formatSelect.innerHTML = '<option>Detecting…</option>';
       formats = await probeFormats(track);
       if (formats.length > 0) formatCache[cacheKey] = formats;
     }
@@ -377,7 +695,7 @@ function buildFormatSelect(formats, current) {
     formats.forEach(([w, h, fps]) => {
       const opt = document.createElement('option');
       opt.value = `${w},${h},${fps}`;
-      opt.textContent = `${w} × ${h} @ ${fps} fps`;
+      opt.textContent = `${w}×${h} @${fps}`;
       const key = `${w}x${h}@${fps}`;
       if (key === curKey) { opt.selected = true; hasCurrent = true; }
       formatSelect.appendChild(opt);
@@ -387,7 +705,7 @@ function buildFormatSelect(formats, current) {
   if (!hasCurrent) {
     const opt = document.createElement('option');
     opt.value = `${current.width},${current.height},${Math.round(current.frameRate)}`;
-    opt.textContent = `${current.width} × ${current.height} @ ${Math.round(current.frameRate)} fps (current)`;
+    opt.textContent = `${current.width}×${current.height} @${Math.round(current.frameRate)}`;
     opt.selected = true;
     formatSelect.prepend(opt);
   }
@@ -445,7 +763,8 @@ ptzToggle.addEventListener('click', async () => {
   } else {
     clearInterval(ptzPollTimer); ptzPollTimer = null;
     ptzConnected = false; setPtzUI(false);
-    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">Enable PTZ to load settings…</p>';
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--cream);opacity:.6">Enable PTZ to load settings…</p>';
+    settingsDrawer.classList.remove('open');
     toast('PTZ disabled');
   }
 });
@@ -486,7 +805,6 @@ const dirMap = {
   home: () => sendReset(),
 };
 function speed() { return parseInt(speedSlider.value); }
-speedSlider.addEventListener('input', () => { speedLabel.textContent = speedSlider.value; });
 
 document.querySelectorAll('.dpad-btn').forEach(btn => {
   const dir = btn.dataset.dir;
@@ -519,7 +837,6 @@ document.addEventListener('keyup', e => {
 });
 
 /* ─── Camera settings (via USB server) ──────────────────────────── */
-
 const SETTING_LABELS = {
   brightness: 'Brightness', contrast: 'Contrast', saturation: 'Saturation',
   sharpness: 'Sharpness',
@@ -531,14 +848,14 @@ async function loadSettings() {
     const data = await res.json();
     buildSettingsUI(data.settings || []);
   } catch {
-    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">Failed to load settings</p>';
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--cream);opacity:.6">Failed to load settings</p>';
   }
 }
 
 function buildSettingsUI(settings) {
   settingsContainer.innerHTML = '';
   if (settings.length === 0) {
-    settingsContainer.innerHTML = '<p style="font-size:13px;color:var(--text-dim)">No adjustable settings found</p>';
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--cream);opacity:.6">No adjustable settings</p>';
     return;
   }
 
@@ -573,7 +890,6 @@ function buildSettingsUI(settings) {
   });
 }
 
-/* ─── Reset settings to defaults ────────────────────────────────── */
 document.getElementById('resetSettingsBtn').addEventListener('click', async () => {
   if (!ptzConnected) { toast('PTZ not connected'); return; }
   try {
@@ -586,6 +902,204 @@ document.getElementById('resetSettingsBtn').addEventListener('click', async () =
 
 /* ─── Init ──────────────────────────────────────────────────────── */
 enumerateCameras();
+
+/* ═══════════════════════════════════════════════════════════════════
+   POSITION EDITOR — press Ctrl+E to toggle
+   ═══════════════════════════════════════════════════════════════════ */
+(function() {
+  const ELEMENTS = {
+    'el-tvimg':      { el: document.getElementById('el-tvimg'),       label: 'TV Background' },
+    'el-video':      { el: document.querySelector('.screen-overlay'), label: 'Video Frame' },
+    'el-camera':     { el: document.getElementById('el-camera'),      label: 'Camera Dropdown' },
+    'el-dpad':       { el: document.getElementById('el-dpad'),        label: 'D-Pad' },
+    'el-speed':      { el: document.getElementById('el-speed'),       label: 'Speed Slider' },
+    'el-resolution': { el: document.getElementById('el-resolution'),  label: 'Resolution' },
+    'el-ptz':        { el: document.getElementById('el-ptz'),         label: 'PTZ Toggle' },
+    'el-settings':   { el: document.getElementById('el-settings'),    label: 'Settings Button' },
+  };
+
+  let editorOpen = false;
+  let selectedId = 'el-tvimg';
+  let step = 0.5;
+
+  /* Build editor panel */
+  const panel = document.createElement('div');
+  panel.id = 'posEditor';
+  panel.innerHTML = `
+    <style>
+      #posEditor {
+        position: fixed; top: 10px; right: 10px; z-index: 9999;
+        background: #222; color: #eee; border-radius: 10px;
+        padding: 14px 16px; font-family: 'Inter', sans-serif; font-size: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,.5); width: 240px; display: none;
+        user-select: none;
+      }
+      #posEditor.open { display: block; }
+      #posEditor h4 { margin: 0 0 10px; font-size: 13px; color: #ffd; letter-spacing: 1px; }
+      #posEditor select { width: 100%; padding: 5px; border-radius: 5px; border: 1px solid #555; background: #333; color: #eee; font-size: 11px; margin-bottom: 10px; }
+      #posEditor .vals { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-bottom: 10px; font-size: 11px; }
+      #posEditor .vals span { color: #aaa; }
+      #posEditor .vals b { color: #fff; }
+      #posEditor .arrows { display: grid; grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(3, 30px); gap: 3px; justify-content: center; margin-bottom: 10px; }
+      #posEditor .arrows button {
+        border: 1px solid #555; background: #444; color: #eee; border-radius: 5px;
+        cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+      }
+      #posEditor .arrows button:hover { background: #666; }
+      #posEditor .arrows button:active { background: #888; }
+      #posEditor .zoom-row { display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 10px; }
+      #posEditor .zoom-row button {
+        border: 1px solid #555; background: #444; color: #eee; border-radius: 5px;
+        cursor: pointer; font-size: 13px; width: 36px; height: 28px;
+      }
+      #posEditor .zoom-row button:hover { background: #666; }
+      #posEditor .zoom-row span { font-size: 10px; color: #aaa; }
+      #posEditor .step-row { display: flex; gap: 6px; align-items: center; justify-content: center; margin-bottom: 10px; font-size: 10px; color: #aaa; }
+      #posEditor .step-row button { border: 1px solid #555; background: #444; color: #eee; border-radius: 4px; cursor: pointer; width: 28px; height: 22px; font-size: 10px; }
+      #posEditor .save-btn {
+        width: 100%; padding: 7px; border-radius: 6px; border: none;
+        background: #4CAF50; color: #fff; font-weight: 700; font-size: 12px;
+        cursor: pointer; letter-spacing: 1px;
+      }
+      #posEditor .save-btn:hover { background: #45a049; }
+      .editor-highlight { outline: 2px dashed #ff0 !important; outline-offset: 2px; }
+    </style>
+    <h4>Position Editor</h4>
+    <select id="editorSelect"></select>
+    <div class="vals">
+      <span>Top:</span><b id="edVal-top">–</b>
+      <span>Left:</span><b id="edVal-left">–</b>
+      <span>Width:</span><b id="edVal-width">–</b>
+      <span>Height:</span><b id="edVal-height">–</b>
+    </div>
+    <div class="step-row">
+      Step:
+      <button id="stepDown">-</button>
+      <b id="stepVal">0.5</b>%
+      <button id="stepUp">+</button>
+    </div>
+    <div class="arrows">
+      <div></div><button id="mv-up">&#9650;</button><div></div>
+      <button id="mv-left">&#9664;</button><button id="mv-center" title="Show values" style="font-size:9px">&#9679;</button><button id="mv-right">&#9654;</button>
+      <div></div><button id="mv-down">&#9660;</button><div></div>
+    </div>
+    <div class="zoom-row">
+      <span>Size:</span>
+      <button id="z-wm">W-</button><button id="z-wp">W+</button>
+      <button id="z-hm">H-</button><button id="z-hp">H+</button>
+    </div>
+    <button class="save-btn" id="editorSave">Copy CSS to Clipboard</button>
+  `;
+  document.body.appendChild(panel);
+
+  const edSel = document.getElementById('editorSelect');
+  Object.entries(ELEMENTS).forEach(([id, {label}]) => {
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = label;
+    edSel.appendChild(opt);
+  });
+
+  function getEl() { return ELEMENTS[selectedId]?.el; }
+
+  function readVals() {
+    const el = getEl(); if (!el) return {};
+    return {
+      top: parseFloat(el.style.top) || 0,
+      left: parseFloat(el.style.left) || 0,
+      width: parseFloat(el.style.width) || 0,
+      height: parseFloat(el.style.height) || 0,
+    };
+  }
+
+  function showVals() {
+    const v = readVals();
+    document.getElementById('edVal-top').textContent = v.top.toFixed(1) + '%';
+    document.getElementById('edVal-left').textContent = v.left.toFixed(1) + '%';
+    document.getElementById('edVal-width').textContent = v.width ? v.width.toFixed(1) + '%' : 'auto';
+    document.getElementById('edVal-height').textContent = v.height ? v.height.toFixed(1) + '%' : 'auto';
+  }
+
+  function highlight() {
+    Object.values(ELEMENTS).forEach(({el}) => el?.classList.remove('editor-highlight'));
+    getEl()?.classList.add('editor-highlight');
+  }
+
+  function move(prop, delta) {
+    const el = getEl(); if (!el) return;
+    const cur = parseFloat(el.style[prop]) || 0;
+    el.style[prop] = (cur + delta).toFixed(1) + '%';
+    showVals();
+  }
+
+  edSel.addEventListener('change', () => { selectedId = edSel.value; highlight(); showVals(); });
+  document.getElementById('mv-up').addEventListener('click', () => move('top', -step));
+  document.getElementById('mv-down').addEventListener('click', () => move('top', step));
+  document.getElementById('mv-left').addEventListener('click', () => move('left', -step));
+  document.getElementById('mv-right').addEventListener('click', () => move('left', step));
+  document.getElementById('z-wp').addEventListener('click', () => move('width', step));
+  document.getElementById('z-wm').addEventListener('click', () => move('width', -step));
+  document.getElementById('z-hp').addEventListener('click', () => move('height', step));
+  document.getElementById('z-hm').addEventListener('click', () => move('height', -step));
+  document.getElementById('mv-center').addEventListener('click', showVals);
+
+  document.getElementById('stepDown').addEventListener('click', () => {
+    step = Math.max(0.1, step - 0.1);
+    document.getElementById('stepVal').textContent = step.toFixed(1);
+  });
+  document.getElementById('stepUp').addEventListener('click', () => {
+    step = Math.min(5, step + 0.1);
+    document.getElementById('stepVal').textContent = step.toFixed(1);
+  });
+
+  document.getElementById('editorSave').addEventListener('click', () => {
+    let css = '/* Saved element positions */\\n';
+    Object.entries(ELEMENTS).forEach(([id, {el, label}]) => {
+      if (!el) return;
+      const s = el.style;
+      css += `/* ${label} */\\n`;
+      css += `#${id}, .${el.className.split(' ')[0]} {\\n`;
+      if (s.top) css += `  top: ${s.top};\\n`;
+      if (s.left) css += `  left: ${s.left};\\n`;
+      if (s.width) css += `  width: ${s.width};\\n`;
+      if (s.height) css += `  height: ${s.height};\\n`;
+      css += `}\\n\\n`;
+    });
+    navigator.clipboard.writeText(css).then(() => {
+      toast('CSS copied to clipboard — paste it to update index.html');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = css; ta.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:300px;z-index:99999;font-size:12px;font-family:monospace;background:#1a1a1a;color:#0f0;padding:12px;border-radius:8px';
+      document.body.appendChild(ta);
+      ta.select();
+      toast('CSS shown — copy it manually');
+      ta.addEventListener('blur', () => ta.remove());
+    });
+  });
+
+  /* Ctrl+E to toggle editor */
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.code === 'KeyE') {
+      e.preventDefault();
+      editorOpen = !editorOpen;
+      panel.classList.toggle('open', editorOpen);
+      if (editorOpen) { highlight(); showVals(); }
+      else { Object.values(ELEMENTS).forEach(({el}) => el?.classList.remove('editor-highlight')); }
+      return;
+    }
+
+    if (!editorOpen) return;
+
+    /* Arrow keys move selected element when editor is open */
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key) && !e.target.closest('#posEditor')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'ArrowUp') move('top', -step);
+      if (e.key === 'ArrowDown') move('top', step);
+      if (e.key === 'ArrowLeft') move('left', -step);
+      if (e.key === 'ArrowRight') move('left', step);
+    }
+  }, true);
+})();
 </script>
 </body>
 </html>
