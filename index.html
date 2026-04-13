@@ -34,13 +34,13 @@
     padding: 20px;
   }
 
-  /* ── TV container ── */
+  /* ── TV container (matches 2624×1632 image ratio) ── */
   .tv {
     position: relative;
-    width: 700px;
-    height: 700px;
+    width: 850px;
+    height: 529px;
     max-width: 95vw;
-    max-height: 95vw;
+    max-height: 59vw;
     flex-shrink: 0;
   }
 
@@ -156,8 +156,8 @@
 
   .dpad {
     position: relative;
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: conic-gradient(from 45deg,
       #b0b0b0 0deg, #d0d0d0 45deg, #b0b0b0 90deg,
@@ -324,7 +324,7 @@
     border-radius: 16px;
     padding: 20px 28px;
     box-shadow: 0 8px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.1);
-    width: 500px;
+    width: 700px;
     max-width: 90vw;
     display: none;
   }
@@ -364,9 +364,75 @@
   .setting-row label .val { color: #fff; font-weight: 600; }
   .setting-row input[type="range"] { width: 100%; accent-color: var(--accent); }
 
+  /* ── Audio spectrum analyzer ── */
+  .audio-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 28%;
+    z-index: 5;
+    pointer-events: none;
+    opacity: .7;
+  }
+
+  /* ── Mic / Mute control ── */
+  .mic-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+  }
+  .mic-lbl { font-size: 7px; color: rgba(60,40,20,.7); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .mic-icon {
+    font-size: 12px;
+    cursor: pointer;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(to bottom, #666, #444);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.4);
+    transition: background .3s;
+    border: none;
+    color: #ccc;
+    position: relative;
+  }
+  .mic-icon.muted { background: linear-gradient(to bottom, #a33, var(--red)); color: #fff; }
+  .mic-icon.active { background: linear-gradient(to bottom, #5a5, var(--green)); color: #fff; }
+  .mic-level {
+    width: 28px; height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+  }
+  .mic-level-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    border-radius: 3px;
+    transition: width .08s;
+  }
+
+  .spec-toggle {
+    font-size: 9px;
+    cursor: pointer;
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(0,0,0,.25);
+    color: rgba(60,40,20,.7);
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .spec-toggle.off { background: rgba(0,0,0,.25); color: rgba(255,255,255,.4); }
+  .spec-toggle:hover { background: rgba(255,255,255,.4); }
+
   /* ── Banner & Toast ── */
   .usb-banner {
-    width: 100%; max-width: 700px; text-align: center;
+    width: 100%; max-width: 850px; text-align: center;
     padding: 8px; font-size: 12px; display: none;
     border-radius: 8px; margin-bottom: 8px;
   }
@@ -403,25 +469,25 @@
 <div class="usb-banner" id="usbBanner"></div>
 
 <div class="tv">
-  <img class="tv-img" id="el-tvimg" src="tv-bg.png" alt="TV" draggable="false" style="top:-4.5%;left:-4%;width:113.5%;height:104.5%">
+  <img class="tv-img" id="el-tvimg" src="tv-bg.png" alt="TV" draggable="false" style="top:0%;left:-1%;width:102%;height:101.5%">
 
   <!-- Video overlay on the screen -->
-  <div class="screen-overlay" id="el-video" style="top:26.5%;left:17.5%;width:55.5%;height:40.5%">
+  <div class="screen-overlay" id="el-video" style="top:27.5%;left:29.5%;width:34%;height:44.5%">
     <video id="videoEl" autoplay playsinline muted></video>
-    <div class="scanlines"></div>
+    <canvas class="audio-bar" id="spectrumCanvas"></canvas>
     <div class="glare"></div>
     <div class="video-info" id="videoOverlay">No camera</div>
   </div>
 
   <!-- Each control is independently positioned -->
-  <div class="tv-el" id="el-camera" data-label="Camera Dropdown" style="top:13.5%;left:78.5%;width:15%">
+  <div class="tv-el" id="el-camera" data-label="Camera Dropdown" style="top:16.5%;left:12%;width:14%">
     <div class="cam-wrap">
       <span class="ctrl-lbl">Camera</span>
       <select id="cameraSelect"><option value="">Loading…</option></select>
     </div>
   </div>
 
-  <div class="tv-el" id="el-dpad" data-label="D-Pad" style="top:38.5%;left:78%;width:15.5%">
+  <div class="tv-el" id="el-dpad" data-label="D-Pad" style="top:57%;left:61.5%;width:14%">
     <div class="dpad-wrap">
       <div class="dpad">
         <button class="dpad-btn" data-dir="up" title="Tilt Up">&#9650;</button>
@@ -433,7 +499,7 @@
     </div>
   </div>
 
-  <div class="tv-el" id="el-speed" data-label="Speed Slider" style="top:51%;left:78%;width:15%">
+  <div class="tv-el" id="el-speed" data-label="Speed Slider" style="top:74.5%;left:59%;width:17.5%">
     <div class="speed-row">
       <span>Slow</span>
       <input type="range" id="speedSlider" min="1" max="10" value="3">
@@ -441,14 +507,14 @@
     </div>
   </div>
 
-  <div class="tv-el" id="el-resolution" data-label="Resolution" style="top:56.5%;left:78%;width:15%">
+  <div class="tv-el" id="el-resolution" data-label="Resolution" style="top:28%;left:63.5%;width:10%">
     <div class="fmt-wrap">
       <span class="ctrl-lbl">Resolution</span>
       <select id="formatSelect"><option>–</option></select>
     </div>
   </div>
 
-  <div class="tv-el" id="el-ptz" data-label="PTZ Toggle" style="top:26%;left:78.5%;width:13%">
+  <div class="tv-el" id="el-ptz" data-label="PTZ Toggle" style="top:69.5%;left:61.5%;width:14%">
     <div class="ptz-row">
       <span class="ptz-lbl">PTZ</span>
       <div class="toggle-track" id="ptzToggle" title="Toggle PTZ"><div class="toggle-thumb"></div></div>
@@ -456,7 +522,16 @@
     </div>
   </div>
 
-  <div class="tv-el" id="el-settings" data-label="Settings Button" style="top:63%;left:78.5%;width:14%">
+  <div class="tv-el" id="el-mic" data-label="Microphone" style="top:22.5%;left:13%;width:12%">
+    <div class="mic-row">
+      <span class="mic-lbl">Mic</span>
+      <button class="mic-icon" id="micToggle" title="Toggle Microphone">&#127908;</button>
+      <div class="mic-level"><div class="mic-level-fill" id="micLevel"></div></div>
+      <button class="spec-toggle" id="specToggle" title="Toggle spectrum analyzer">&#9641;</button>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-settings" data-label="Settings Button" style="top:34%;left:61.5%;width:14%">
     <button class="settings-btn" id="settingsBtn">
       <span class="gear">&#9881;</span> Settings
     </button>
@@ -466,6 +541,7 @@
 <div class="kbd-hint">
   <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> arrows
   &middot; <kbd>H</kbd> home
+  &middot; <kbd>M</kbd> mic mute
 </div>
 
 <!-- Settings drawer -->
@@ -825,6 +901,7 @@ let keyRepeat = null;
 function processKeys() { activeKeys.forEach(d => { if (dirMap[d]) dirMap[d](); }); }
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'KeyM') { if (micActive) toggleMute(); else startAudio(); return; }
   const dir = keyMap[e.code]; if (!dir) return; e.preventDefault();
   const btn = document.querySelector(`.dpad-btn[data-dir="${dir}"]`); if (btn) btn.classList.add('active');
   if (!activeKeys.has(dir)) { activeKeys.add(dir); processKeys(); if (!keyRepeat && dir !== 'home') keyRepeat = setInterval(processKeys, 250); }
@@ -900,6 +977,167 @@ document.getElementById('resetSettingsBtn').addEventListener('click', async () =
   } catch { toast('Reset request failed'); }
 });
 
+/* ─── Microphone & Spectrum Analyzer ─────────────────────────────── */
+const micToggle  = document.getElementById('micToggle');
+const micLevelEl = document.getElementById('micLevel');
+const specCanvas = document.getElementById('spectrumCanvas');
+const specCtx    = specCanvas.getContext('2d');
+
+let audioCtx     = null;
+let audioStream  = null;
+let analyser     = null;
+let micSource    = null;
+let micMuted     = false;
+let micActive    = false;
+let spectrumRAF  = null;
+
+async function findMatchingAudioDevice() {
+  const camLabel = (camSelect.selectedOptions[0]?.textContent || '').toLowerCase();
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const audioInputs = devices.filter(d => d.kind === 'audioinput' && d.deviceId);
+  if (audioInputs.length === 0) return null;
+
+  if (camLabel.match(/046d:0994|orbit|logitech/)) {
+    const match = audioInputs.find(d => {
+      const l = (d.label || '').toLowerCase();
+      return l.includes('046d:0994') || l.includes('orbit') || (l.includes('usb audio') && !l.includes('headphone'));
+    });
+    if (match) return match.deviceId;
+  }
+
+  const words = camLabel.split(/[\s\-_()]+/).filter(w => w.length > 3);
+  for (const dev of audioInputs) {
+    const dl = (dev.label || '').toLowerCase();
+    if (words.some(w => dl.includes(w))) return dev.deviceId;
+  }
+
+  return null;
+}
+
+async function startAudio() {
+  try {
+    const audioDeviceId = await findMatchingAudioDevice();
+    const constraints = { audio: audioDeviceId ? { deviceId: { exact: audioDeviceId } } : true };
+    audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    micSource = audioCtx.createMediaStreamSource(audioStream);
+    micSource.connect(analyser);
+
+    micActive = true;
+    micMuted = false;
+    micToggle.classList.remove('muted');
+    micToggle.classList.add('active');
+    micToggle.innerHTML = '&#127908;';
+    drawSpectrum();
+  } catch (err) {
+    toast('Mic error: ' + err.message);
+  }
+}
+
+function stopAudio() {
+  micActive = false;
+  if (spectrumRAF) { cancelAnimationFrame(spectrumRAF); spectrumRAF = null; }
+  if (micSource) { micSource.disconnect(); micSource = null; }
+  if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+  analyser = null;
+  micToggle.classList.remove('active', 'muted');
+  micToggle.innerHTML = '&#127908;';
+  micLevelEl.style.width = '0%';
+  specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+}
+
+function toggleMute() {
+  if (!audioStream) return;
+  micMuted = !micMuted;
+  audioStream.getAudioTracks().forEach(t => { t.enabled = !micMuted; });
+  micToggle.classList.toggle('muted', micMuted);
+  micToggle.classList.toggle('active', !micMuted);
+  micToggle.innerHTML = micMuted ? '&#128263;' : '&#127908;';
+  if (micMuted) {
+    micLevelEl.style.width = '0%';
+    specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+  }
+}
+
+micToggle.addEventListener('click', () => {
+  if (!micActive) startAudio();
+  else if (micMuted) toggleMute();
+  else toggleMute();
+});
+micToggle.addEventListener('dblclick', () => { if (micActive) stopAudio(); });
+
+/* Spectrum analyzer toggle */
+let spectrumEnabled = true;
+const specToggleBtn = document.getElementById('specToggle');
+specToggleBtn.addEventListener('click', () => {
+  spectrumEnabled = !spectrumEnabled;
+  specToggleBtn.classList.toggle('off', !spectrumEnabled);
+  specToggleBtn.title = spectrumEnabled ? 'Hide spectrum analyzer' : 'Show spectrum analyzer';
+  specCanvas.style.display = spectrumEnabled ? '' : 'none';
+  if (!spectrumEnabled) {
+    specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+  }
+});
+
+function drawSpectrum() {
+  if (!analyser || !micActive) return;
+  spectrumRAF = requestAnimationFrame(drawSpectrum);
+
+  const bufLen = analyser.frequencyBinCount;
+  const data = new Uint8Array(bufLen);
+  analyser.getByteFrequencyData(data);
+
+  const rect = specCanvas.parentElement.getBoundingClientRect();
+  if (specCanvas.width !== Math.floor(rect.width) || specCanvas.height !== Math.floor(rect.height * 0.28)) {
+    specCanvas.width = Math.floor(rect.width);
+    specCanvas.height = Math.floor(rect.height * 0.28);
+  }
+  const W = specCanvas.width;
+  const H = specCanvas.height;
+
+  specCtx.clearRect(0, 0, W, H);
+
+  if (micMuted) {
+    micLevelEl.style.width = '0%';
+    return;
+  }
+
+  const barCount = Math.min(bufLen, 48);
+  const barW = Math.max(1, (W / barCount) - 1);
+  const gap = (W - barW * barCount) / (barCount + 1);
+
+  let rms = 0;
+  for (let i = 0; i < barCount; i++) {
+    const v = data[i] / 255;
+    rms += v * v;
+    if (spectrumEnabled) {
+      const barH = v * H;
+      const x = gap + i * (barW + gap);
+      const y = H - barH;
+
+      const grad = specCtx.createLinearGradient(x, H, x, y);
+      grad.addColorStop(0, 'rgba(76,175,80,0.9)');
+      grad.addColorStop(0.5, 'rgba(212,164,76,0.9)');
+      grad.addColorStop(1, 'rgba(231,76,60,0.9)');
+      specCtx.fillStyle = grad;
+      specCtx.fillRect(x, y, barW, barH);
+
+      specCtx.fillStyle = 'rgba(255,255,255,0.25)';
+      specCtx.fillRect(x, y, barW, 1);
+    }
+  }
+
+  rms = Math.sqrt(rms / barCount);
+  micLevelEl.style.width = Math.min(100, rms * 150).toFixed(0) + '%';
+  micLevelEl.style.background = rms > 0.6 ? 'var(--red)' : rms > 0.3 ? 'var(--accent)' : 'var(--green)';
+}
+
 /* ─── Init ──────────────────────────────────────────────────────── */
 enumerateCameras();
 
@@ -915,6 +1153,7 @@ enumerateCameras();
     'el-speed':      { el: document.getElementById('el-speed'),       label: 'Speed Slider' },
     'el-resolution': { el: document.getElementById('el-resolution'),  label: 'Resolution' },
     'el-ptz':        { el: document.getElementById('el-ptz'),         label: 'PTZ Toggle' },
+    'el-mic':        { el: document.getElementById('el-mic'),          label: 'Microphone' },
     'el-settings':   { el: document.getElementById('el-settings'),    label: 'Settings Button' },
   };
 
