@@ -1,6 +1,6 @@
-# Logitech Orbit AF – Web PTZ Controller
+# Logitech Orbit AF – Web Pan/Tilt Controller
 
-Browser-based pan/tilt/zoom controller for the **Logitech QuickCam Orbit AF** (VID `046d`, PID `0994`), wrapped in a retro TV interface.
+Browser-based pan/tilt controller for the **Logitech QuickCam Orbit AF** (VID `046d`, PID `0994`), wrapped in a retro TV interface.
 
 ![Orbit AF Controller UI](screenshot.png)
 
@@ -13,7 +13,7 @@ The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extensio
 - **Dynamic format detection** — automatically probes each camera for its actual supported resolutions and frame rates
 - **Highest resolution by default** — opens camera at its maximum supported resolution
 - **Multi-camera support** — switch between cameras from a dropdown (e.g., built-in + USB)
-- **PTZ motor control** — pan/tilt via on-screen D-pad, keyboard arrows, or speed slider
+- **Pan/tilt motor control** — pan/tilt via on-screen D-pad, keyboard arrows, or speed slider
 - **Camera image settings** — brightness, contrast, saturation, sharpness sliders (via USB)
 - **Reset to defaults** — one-click factory reset for all image settings
 - **Microphone capture** — automatically detects and captures audio from the camera's built-in microphone
@@ -74,17 +74,17 @@ clang -o uvc_ctrl uvc_ctrl.m -framework IOKit -framework CoreFoundation \
 │  Settings Sliders ─────│──> /api/reset    │                     │
 └────────────────────────┘                  └─────────────────────┘
           │
-          │ localhost:9090 (only needed for PTZ)
+          │ localhost:9090 (only needed for pan/tilt)
           ▼
 ┌────────────────────────┐
 │  ./uvc_ctrl             │
 │  (Obj-C + IOKit)        │
-│  PTZ server + USB       │
+│  Pan/tilt server + USB  │
 └────────────────────────┘
 ```
 
 - **Video & format selection** work by opening `index.html` in Chrome — no server needed.
-- **PTZ & camera settings** require `./uvc_ctrl` running — toggle PTZ on in the page to connect.
+- **Pan/tilt & camera settings** require `./uvc_ctrl` running — toggle PTZ on in the page to connect.
 
 ## Project Structure
 
