@@ -2,6 +2,8 @@
 
 Browser-based pan/tilt/zoom controller for the **Logitech QuickCam Orbit AF** (VID `046d`, PID `0994`), wrapped in a retro TV interface.
 
+![Orbit AF Controller UI](screenshot.png)
+
 The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extension Unit (Unit ID `0x09`), which standard browser APIs don't expose. A single native macOS binary (`uvc_ctrl`) handles USB control transfers via IOKit — no Python, no pip, no sudo required.
 
 ## Features
@@ -85,6 +87,7 @@ clang -o uvc_ctrl uvc_ctrl.m -framework IOKit -framework CoreFoundation \
 logitec_Orbit_AF/
 ├── index.html            # Retro TV web UI (standalone camera viewer + PTZ controls)
 ├── tv-bg.png             # TV background image used by the UI
+├── screenshot.png        # UI screenshot used in README
 ├── uvc_ctrl.m            # Native macOS binary source (Obj-C, IOKit, AVFoundation)
 ├── start_ptz.command     # Double-clickable launcher for PTZ server
 ├── README.md             # This file
