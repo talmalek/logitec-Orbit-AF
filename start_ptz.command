@@ -17,6 +17,12 @@ fi
 
 echo "Starting PTZ server…"
 echo "Toggle PTZ on in the web page to connect."
-echo "Press Ctrl+C to stop."
+echo "Press Ctrl+C or close this window to stop."
 echo ""
-./uvc_ctrl
+
+./uvc_ctrl &
+PTZ_PID=$!
+
+trap 'echo ""; echo "Stopping PTZ server…"; kill $PTZ_PID 2>/dev/null; wait $PTZ_PID 2>/dev/null; echo "Done."' EXIT INT TERM HUP
+
+wait $PTZ_PID
