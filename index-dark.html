@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit AF — Dark Mode</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg:       #080808;
+    --surface:  #111111;
+    --surface2: #181818;
+    --border:   rgba(255,255,255,.07);
+    --border-hi:rgba(255,255,255,.15);
+    --cyan:     #00e5ff;
+    --cyan-dim: rgba(0,229,255,.15);
+    --cyan-glow:rgba(0,229,255,.4);
+    --violet:   #7c3aed;
+    --violet-dim:rgba(124,58,237,.15);
+    --green:    #22c55e;
+    --red:      #ef4444;
+    --amber:    #f59e0b;
+    --text:     #f0f0f0;
+    --text-dim: #666;
+    --text-mid: #999;
+    --mono:     'JetBrains Mono', 'Courier New', monospace;
+    --hud-bg:   radial-gradient(circle, #1e1e1e 0%, #111 100%);
+    --theme-transition: background .25s, color .25s, border-color .25s, box-shadow .25s;
+  }
+
+  /* ── Light theme overrides ──────────────────────────────────── */
+  [data-theme="light"] {
+    --bg:        #f0f2f5;
+    --surface:   #ffffff;
+    --surface2:  #f7f8fa;
+    --border:    rgba(0,0,0,.08);
+    --border-hi: rgba(0,0,0,.18);
+    --cyan:      #0096b4;
+    --cyan-dim:  rgba(0,150,180,.12);
+    --cyan-glow: rgba(0,150,180,.35);
+    --violet:    #6d28d9;
+    --violet-dim:rgba(109,40,217,.1);
+    --green:     #16a34a;
+    --red:       #dc2626;
+    --amber:     #d97706;
+    --text:      #111111;
+    --text-dim:  #9ca3af;
+    --text-mid:  #6b7280;
+    --hud-bg:    radial-gradient(circle, #f0f2f5 0%, #e2e5ea 100%);
+  }
+
+  /* Smooth transition on theme switch */
+  body, .topbar, .sidebar, .bottombar, .panel, .video-card,
+  .spectrum-wrap, .dark-select, .btn, .icon-btn, .settings-drawer,
+  .ptz-card, .kbd-popover { transition: var(--theme-transition); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top bar ────────────────────────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .app-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  .topbar-sep { flex: 1; }
+
+  .topbar-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .top-lbl {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+  }
+
+  select.dark-select {
+    background: var(--surface2);
+    border: 1px solid var(--border-hi);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    min-width: 160px;
+  }
+  select.dark-select:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px var(--cyan-dim); }
+
+  .icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--border-hi);
+    background: var(--surface2);
+    color: var(--text-mid);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
+  .icon-btn.active { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.12); }
+  .icon-btn.muted  { border-color: var(--red);  color: var(--red);  background: rgba(239,68,68,.12); }
+
+  /* ── Theme toggle pill ───────────────────────────────────────── */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px 4px 6px;
+    border-radius: 20px;
+    border: 1px solid var(--border-hi);
+    background: var(--surface2);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: var(--text-mid);
+    transition: border-color .2s, color .2s, background .2s;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .theme-toggle:hover { border-color: var(--cyan); color: var(--cyan); }
+  .theme-toggle-icon { font-size: 14px; line-height: 1; }
+  .theme-toggle-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+  .main {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    background: var(--bg);
+  }
+
+  /* ── Video area ──────────────────────────────────────────────── */
+  .video-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0 20px 20px;
+    gap: 0;
+    min-width: 0;
+  }
+
+  .video-card {
+    position: relative;
+    flex: 1;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 1px var(--border), 0 0 40px rgba(0,229,255,.04);
+    transition: box-shadow .3s;
+  }
+  .video-card.live {
+    border-color: rgba(0,229,255,.3);
+    box-shadow: 0 0 0 1px rgba(0,229,255,.15), 0 0 60px rgba(0,229,255,.08);
+  }
+
+  .video-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .video-glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 15%, rgba(0,229,255,.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .video-info {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--cyan);
+    background: rgba(0,0,0,.7);
+    border: 1px solid rgba(0,229,255,.2);
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: .5px;
+    opacity: 1;
+    transition: opacity .6s;
+  }
+  .video-info.hidden { opacity: 0; }
+  .video-card:hover .video-info.hidden { opacity: .7; }
+
+  .live-badge {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--red);
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: none;
+  }
+  .live-badge.show { display: flex; }
+
+  /* ── Fullscreen button ───────────────────────────────────────── */
+  .fullscreen-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-hi);
+    background: rgba(0,0,0,.55);
+    color: var(--text-mid);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .2s, border-color .2s, color .2s;
+    z-index: 5;
+    backdrop-filter: blur(4px);
+    line-height: 1;
+  }
+  .video-card:hover .fullscreen-btn { opacity: 1; }
+  .fullscreen-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .video-card:fullscreen video { object-fit: contain; background: #000; }
+
+  .live-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: pulse-red 1.5s infinite;
+  }
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+
+  /* ── Spectrum strip ──────────────────────────────────────────── */
+  .spectrum-wrap {
+    height: 48px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  #spectrumCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .spec-off-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+
+  /* ── Sidebar ─────────────────────────────────────────────────── */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px 20px 20px 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg);
+  }
+
+  .sidebar::-webkit-scrollbar { width: 3px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .panel-title {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  /* ── HUD D-pad ───────────────────────────────────────────────── */
+  .hud-dpad {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin: 0 auto;
+  }
+
+  .hud-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-hi);
+    background: var(--hud-bg);
+    box-shadow: 0 0 20px rgba(0,229,255,.06), inset 0 0 12px rgba(0,0,0,.2);
+  }
+
+  .hud-btn {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-mid);
+    transition: color .15s, text-shadow .15s;
+    -webkit-user-select: none;
+    user-select: none;
+    z-index: 2;
+    font-size: 9px;
+  }
+  .hud-btn:hover { color: var(--cyan); text-shadow: 0 0 8px var(--cyan-glow); }
+  .hud-btn:active, .hud-btn.active { color: var(--cyan); text-shadow: 0 0 12px var(--cyan-glow); transform: scale(.85); }
+
+  .hud-btn[data-dir="up"]    { top: 6px; left: 50%; transform: translateX(-50%); width: 30px; height: 24px; }
+  .hud-btn[data-dir="down"]  { bottom: 6px; left: 50%; transform: translateX(-50%); width: 30px; height: 24px; }
+  .hud-btn[data-dir="left"]  { left: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 30px; }
+  .hud-btn[data-dir="right"] { right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 30px; }
+
+  .hud-btn[data-dir="up"]:active, .hud-btn[data-dir="up"].active { transform: translateX(-50%) scale(.85); }
+  .hud-btn[data-dir="down"]:active, .hud-btn[data-dir="down"].active { transform: translateX(-50%) scale(.85); }
+  .hud-btn[data-dir="left"]:active, .hud-btn[data-dir="left"].active { transform: translateY(-50%) scale(.85); }
+  .hud-btn[data-dir="right"]:active, .hud-btn[data-dir="right"].active { transform: translateY(-50%) scale(.85); }
+
+  .hud-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border-hi);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 13px;
+    transition: all .2s;
+    z-index: 3;
+  }
+  .hud-center:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 12px var(--cyan-glow); }
+  .hud-center:active { transform: translate(-50%, -50%) scale(.9); }
+
+  /* Crosshair lines */
+  .hud-cross {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .hud-cross::before,
+  .hud-cross::after {
+    content: '';
+    position: absolute;
+    background: var(--border);
+  }
+  .hud-cross::before { left: 50%; top: 20%; width: 1px; height: 60%; transform: translateX(-50%); }
+  .hud-cross::after  { top: 50%; left: 20%; height: 1px; width: 60%; transform: translateY(-50%); }
+
+  /* disabled dpad */
+  .hud-dpad.disabled { opacity: .25; pointer-events: none; }
+
+  /* ── Speed control ───────────────────────────────────────────── */
+  .speed-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .speed-ctrl label {
+    font-size: 9px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 34px;
+  }
+  input[type="range"].hud-range {
+    flex: 1;
+    min-width: 0;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border-hi);
+    border-radius: 2px;
+    outline: none;
+    accent-color: var(--cyan);
+  }
+  input[type="range"].hud-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--cyan);
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--cyan-glow);
+  }
+  .speed-val-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cyan);
+    min-width: 16px;
+    text-align: right;
+  }
+
+  /* ── PTZ connection card ─────────────────────────────────────── */
+  .ptz-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .ptz-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: .5px;
+    transition: all .3s;
+  }
+  .ptz-badge.idle { background: rgba(255,255,255,.06); color: var(--text-dim); }
+  .ptz-badge.ok   { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+  .ptz-badge.warn { background: rgba(245,158,11,.1); color: var(--amber); border: 1px solid rgba(245,158,11,.25); }
+
+  /* toggle pill */
+  .toggle-pill {
+    position: relative;
+    width: 36px; height: 18px;
+    border-radius: 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border-hi);
+    cursor: pointer;
+    transition: background .25s, border-color .25s;
+    flex-shrink: 0;
+  }
+  .toggle-pill.on { background: rgba(34,197,94,.2); border-color: rgba(34,197,94,.4); }
+  .toggle-pill-thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: transform .2s, background .2s;
+  }
+  .toggle-pill.on .toggle-pill-thumb { transform: translateX(18px); background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,.5); }
+
+  /* ── Mic level bar ───────────────────────────────────────────── */
+  .mic-level-bar {
+    height: 3px;
+    background: var(--border-hi);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .mic-level-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width .08s, background .15s;
+  }
+
+  /* ── Settings panel (slide-in) ───────────────────────────────── */
+  .settings-panel {
+    position: fixed;
+    top: 0; right: -360px;
+    width: 340px;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 50;
+    transition: right .3s cubic-bezier(.4,0,.2,1);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    box-shadow: -8px 0 40px rgba(0,0,0,.5);
+  }
+  .settings-panel.open { right: 0; }
+
+  .settings-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-panel-header h3 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-mid);
+  }
+
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .settings-body::-webkit-scrollbar { width: 3px; }
+  .settings-body::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  .setting-row {
+    margin-bottom: 18px;
+  }
+  .setting-row:last-child { margin-bottom: 0; }
+  .setting-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-bottom: 6px;
+  }
+  .setting-row label .val {
+    font-family: var(--mono);
+    color: var(--cyan);
+    font-size: 11px;
+  }
+  .setting-row input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border-hi);
+    border-radius: 2px;
+    outline: none;
+    accent-color: var(--cyan);
+  }
+  .setting-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--cyan);
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--cyan-glow);
+  }
+
+  .settings-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: 7px;
+    border: 1px solid var(--border-hi);
+    background: var(--surface2);
+    color: var(--text-mid);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn:hover { border-color: var(--border-hi); background: rgba(255,255,255,.06); color: var(--text); }
+  .btn.primary { background: var(--cyan-dim); border-color: rgba(0,229,255,.3); color: var(--cyan); }
+  .btn.primary:hover { background: rgba(0,229,255,.2); }
+
+  /* ── Toast ───────────────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    color: var(--text);
+    padding: 10px 20px; border-radius: 8px; font-size: 12px;
+    opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    font-family: var(--mono);
+    letter-spacing: .3px;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── Overlay backdrop ────────────────────────────────────────── */
+  .backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 49;
+  }
+  .backdrop.show { display: block; }
+
+  /* ── ? Popover ───────────────────────────────────────────────── */
+  .kbd-popover {
+    display: none;
+    position: fixed;
+    bottom: 60px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 11px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    line-height: 2;
+    color: var(--text-mid);
+  }
+  .kbd-popover.open { display: block; }
+  .kbd-popover kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border-hi);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  /* ── Bottom action bar ───────────────────────────────────────── */
+  .bottombar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .banner {
+    flex: 1;
+    font-size: 11px;
+    color: var(--amber);
+    font-family: var(--mono);
+    display: none;
+  }
+  .banner.show { display: block; }
+
+  .trademark {
+    font-size: 9px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    letter-spacing: .5px;
+    white-space: nowrap;
+    opacity: .6;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="topbar">
+  <span class="app-title">ORBIT&nbsp;AF&nbsp;///</span>
+  <div class="topbar-sep"></div>
+  <div class="topbar-group">
+    <span class="top-lbl">Camera</span>
+    <select class="dark-select" id="cameraSelect" title="Select camera">
+      <option value="">Loading…</option>
+    </select>
+  </div>
+  <div class="topbar-group" style="gap:6px">
+    <button class="icon-btn" id="micToggle" title="Click to enable mic · Double-click to stop">🎤</button>
+    <div class="mic-level-bar" style="width:60px;align-self:center">
+      <div class="mic-level-fill" id="micLevel"></div>
+    </div>
+    <button class="icon-btn" id="specToggle" title="Toggle spectrum analyzer">▩</button>
+  </div>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light / dark mode">
+    <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+    <span class="theme-toggle-label" id="themeLabel">Dark</span>
+  </button>
+</header>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Video + spectrum -->
+  <div class="video-area">
+    <div class="video-card" id="videoCard">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <div class="video-glare"></div>
+      <div class="live-badge" id="liveBadge"><div class="live-dot"></div>LIVE</div>
+      <div class="video-info" id="videoOverlay">No camera</div>
+      <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen (F)">⛶</button>
+    </div>
+    <div class="spectrum-wrap">
+      <canvas id="spectrumCanvas"></canvas>
+      <div class="spec-off-msg" id="specOffMsg">— mic off —</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <!-- Resolution -->
+    <div class="panel">
+      <div class="panel-title">Resolution</div>
+      <select class="dark-select" id="formatSelect" title="Select resolution" style="width:100%;min-width:0">
+        <option>–</option>
+      </select>
+    </div>
+
+    <!-- Pan/Tilt -->
+    <div class="panel">
+      <div class="panel-title">Pan / Tilt</div>
+      <div class="ptz-row" style="margin-bottom:10px">
+        <div class="toggle-pill" id="ptzToggle" title="Connect to pan/tilt server">
+          <div class="toggle-pill-thumb"></div>
+        </div>
+        <div class="ptz-badge idle" id="ptzStatusMsg">Off</div>
+      </div>
+
+      <div class="hud-dpad disabled" id="el-dpad">
+        <div class="hud-ring"></div>
+        <div class="hud-cross"></div>
+        <button class="hud-btn" data-dir="up"    title="Tilt Up">▲</button>
+        <button class="hud-btn" data-dir="down"  title="Tilt Down">▼</button>
+        <button class="hud-btn" data-dir="left"  title="Pan Left">◀</button>
+        <button class="hud-btn" data-dir="right" title="Pan Right">▶</button>
+        <button class="hud-center" id="homeBtn"  title="Reset to center">⌂</button>
+      </div>
+
+      <div class="speed-ctrl" style="margin-top:12px">
+        <label>Speed</label>
+        <input type="range" class="hud-range" id="speedSlider" min="1" max="10" value="3" title="Pan/tilt speed">
+        <span class="speed-val-badge" id="speedVal">3</span>
+      </div>
+    </div>
+
+    <!-- Settings button -->
+    <div class="panel" style="padding:10px 14px">
+      <button class="btn primary" id="settingsBtn" style="width:100%;justify-content:center" title="Open camera image settings">
+        ⚙ Camera Settings
+      </button>
+    </div>
+
+  </aside>
+</div>
+
+<!-- Bottom bar -->
+<div class="bottombar">
+  <span class="trademark">© Created by Tal Malek</span>
+  <span class="banner" id="usbBanner"></span>
+  <button class="btn" id="kbdBtn" title="Keyboard shortcuts" style="font-size:11px">? Shortcuts</button>
+</div>
+
+<!-- Keyboard popover -->
+<div class="kbd-popover" id="kbdPopover">
+  <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> Pan / Tilt<br>
+  <kbd>H</kbd> Reset to center<br>
+  <kbd>M</kbd> Mic mute toggle<br>
+  <kbd>F</kbd> Toggle fullscreen<br>
+  <kbd>Ctrl</kbd>+<kbd>E</kbd> Position editor
+</div>
+
+<!-- Settings panel -->
+<div class="backdrop" id="backdrop"></div>
+<div class="settings-panel" id="settingsDrawer">
+  <div class="settings-panel-header">
+    <h3>Camera Settings</h3>
+    <button class="icon-btn" id="settingsClose" title="Close" style="font-size:16px">×</button>
+  </div>
+  <div class="settings-body">
+    <div id="settingsContainer">
+      <p style="font-size:12px;color:var(--text-dim)">Enable Pan/Tilt to load settings…</p>
+    </div>
+  </div>
+  <div class="settings-footer">
+    <button class="btn primary" id="resetSettingsBtn" style="flex:1;justify-content:center">↺ Reset Defaults</button>
+    <button class="btn" id="settingsClose2">Done</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PTZ_SERVER = 'http://localhost:9090';
+const videoEl         = document.getElementById('videoEl');
+const overlay         = document.getElementById('videoOverlay');
+const camSelect       = document.getElementById('cameraSelect');
+const usbBanner       = document.getElementById('usbBanner');
+const ptzToggle       = document.getElementById('ptzToggle');
+const ptzStatusMsg    = document.getElementById('ptzStatusMsg');
+const controlsPanel   = document.getElementById('el-dpad');
+const speedSlider     = document.getElementById('speedSlider');
+const speedValEl      = document.getElementById('speedVal');
+const settingsContainer = document.getElementById('settingsContainer');
+const formatSelect    = document.getElementById('formatSelect');
+const settingsDrawer  = document.getElementById('settingsDrawer');
+const videoCard       = document.getElementById('videoCard');
+const liveBadge       = document.getElementById('liveBadge');
+const backdrop        = document.getElementById('backdrop');
+
+speedSlider.addEventListener('input', () => { speedValEl.textContent = speedSlider.value; });
+
+let currentStream = null;
+let ptzEnabled    = false;
+let ptzConnected  = false;
+let ptzPollTimer  = null;
+
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+let overlayFadeTimer = null;
+function showOverlay(text) {
+  overlay.textContent = text;
+  overlay.classList.remove('hidden');
+  clearTimeout(overlayFadeTimer);
+  overlayFadeTimer = setTimeout(() => overlay.classList.add('hidden'), 3000);
+}
+
+function openSettings() {
+  settingsDrawer.classList.add('open');
+  backdrop.classList.add('show');
+}
+function closeSettings() {
+  settingsDrawer.classList.remove('open');
+  backdrop.classList.remove('show');
+}
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsClose').addEventListener('click', closeSettings);
+document.getElementById('settingsClose2').addEventListener('click', closeSettings);
+backdrop.addEventListener('click', closeSettings);
+
+/* ─── Camera enumeration ─────────────────────────────────────── */
+async function enumerateCameras() {
+  let permStream = null;
+  try { permStream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch {}
+
+  fetchServerFormats().catch(() => {});
+
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  let vids = devices.filter(d => d.kind === 'videoinput' && d.deviceId);
+
+  if (vids.length === 0 && permStream) {
+    const track = permStream.getVideoTracks()[0];
+    const s = track.getSettings();
+    vids = [{ deviceId: s.deviceId || '__default__', label: track.label || 'Camera 1', kind: 'videoinput' }];
+  } else if (vids.every(d => d.deviceId === '')) {
+    const allVids = devices.filter(d => d.kind === 'videoinput');
+    vids = allVids.map((d, i) => ({ deviceId: `__idx_${i}__`, label: d.label || `Camera ${i + 1}`, kind: 'videoinput' }));
+  }
+
+  if (permStream) { permStream.getTracks().forEach(t => t.stop()); permStream = null; }
+
+  camSelect.innerHTML = '';
+  if (vids.length === 0) { camSelect.innerHTML = '<option value="">No cameras</option>'; return; }
+  vids.forEach((d, i) => {
+    const opt = document.createElement('option');
+    opt.value = d.deviceId;
+    opt.textContent = d.label || `Camera ${i + 1}`;
+    camSelect.appendChild(opt);
+  });
+  const logi = vids.find(d => (d.label || '').toLowerCase().match(/046d:0994|orbit|logitech/));
+  if (logi) camSelect.value = logi.deviceId;
+  await startCamera(camSelect.value);
+
+  const devicesRetry = await navigator.mediaDevices.enumerateDevices();
+  const vidsRetry = devicesRetry.filter(d => d.kind === 'videoinput');
+  if (vidsRetry.length > 0 && vidsRetry[0].label && vidsRetry[0].label !== camSelect.options[0]?.textContent) {
+    const savedVal = camSelect.value;
+    camSelect.innerHTML = '';
+    vidsRetry.forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId || `__idx_${i}__`;
+      opt.textContent = d.label || `Camera ${i + 1}`;
+      camSelect.appendChild(opt);
+    });
+    if ([...camSelect.options].some(o => o.value === savedVal)) camSelect.value = savedVal;
+  }
+}
+
+/* ─── Start camera ───────────────────────────────────────────── */
+let currentDeviceId = null;
+
+async function startCamera(deviceId, w, h, fps) {
+  if (!deviceId) return;
+
+  if (currentStream && deviceId === currentDeviceId) {
+    const track = currentStream.getVideoTracks()[0];
+    try {
+      const c = {};
+      if (w && h) { c.width = { exact: w }; c.height = { exact: h }; }
+      if (fps) c.frameRate = { ideal: fps };
+      await track.applyConstraints(c);
+      const s = track.getSettings();
+      showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
+      return;
+    } catch {}
+  }
+
+  if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
+  videoCard.classList.remove('live');
+  liveBadge.classList.remove('show');
+
+  const vc = {};
+  if (deviceId && !deviceId.startsWith('__')) vc.deviceId = { exact: deviceId };
+  if (w && h) { vc.width = { ideal: w }; vc.height = { ideal: h }; }
+  else { vc.width = { ideal: 9999 }; vc.height = { ideal: 9999 }; }
+  if (fps) vc.frameRate = { ideal: fps };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: vc });
+    currentStream = stream;
+    currentDeviceId = deviceId;
+    videoEl.srcObject = stream;
+    const track = stream.getVideoTracks()[0];
+    const s = track.getSettings();
+    showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
+    videoCard.classList.add('live');
+    liveBadge.classList.add('show');
+    await probeAndBuildFormats(track, s);
+  } catch (err) {
+    showOverlay('Camera error');
+    toast('Failed: ' + err.message);
+  }
+}
+camSelect.addEventListener('change', () => { currentDeviceId = null; startCamera(camSelect.value); });
+navigator.mediaDevices.addEventListener('devicechange', enumerateCameras);
+
+/* ─── Resolution & FPS ───────────────────────────────────────── */
+let serverFormats = {};
+
+async function fetchServerFormats() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/formats`, { signal: AbortSignal.timeout(1500) });
+    const data = await res.json();
+    (data.cameras || []).forEach(cam => { serverFormats[cam.name.toLowerCase()] = cam.formats; });
+  } catch {}
+}
+
+function matchServerFormats(label) {
+  const lower = label.toLowerCase();
+  let bestFmts = null, bestScore = 0;
+  for (const [name, fmts] of Object.entries(serverFormats)) {
+    let score = 0;
+    if (lower === name) return fmts;
+    if (lower.includes(name)) score = name.length;
+    else if (name.includes(lower)) score = lower.length;
+    else { name.split(/\s+/).filter(w => w.length > 3).forEach(w => { if (lower.includes(w)) score += w.length; }); }
+    if (score > bestScore) { bestScore = score; bestFmts = fmts; }
+  }
+  return bestFmts;
+}
+
+const PROBE_RESOLUTIONS = [
+  [1920,1080],[1600,1200],[1552,1552],[1328,1760],[1760,1328],
+  [1280,720],[1080,1920],[960,720],[800,600],[640,480],
+  [352,288],[320,240],[176,144],[160,120]
+];
+const PROBE_FPS = [30,25,20,15,10,5];
+let formatCache = {};
+
+async function probeFormats(track) {
+  const cap = track.getCapabilities ? track.getCapabilities() : null;
+  const wMax = cap?.width?.max || 9999;
+  const hMax = cap?.height?.max || 9999;
+  const origSettings = track.getSettings();
+  const formats = [];
+  for (const [w, h] of PROBE_RESOLUTIONS) {
+    if (w > wMax || h > hMax) continue;
+    try {
+      await track.applyConstraints({ width: { exact: w }, height: { exact: h }, frameRate: { ideal: 30 } });
+      const s = track.getSettings();
+      if (s.width === w && s.height === h) {
+        const maxFps = Math.round(s.frameRate);
+        PROBE_FPS.forEach(fps => { if (fps <= maxFps) formats.push([w, h, fps]); });
+      }
+    } catch {}
+  }
+  try { await track.applyConstraints({ width: { exact: origSettings.width }, height: { exact: origSettings.height }, frameRate: { ideal: origSettings.frameRate } }); } catch {}
+  return formats;
+}
+
+async function probeAndBuildFormats(track, current) {
+  const label = camSelect.selectedOptions[0]?.textContent || '';
+  let formats = matchServerFormats(label);
+  if (!formats || formats.length === 0) {
+    const cacheKey = label || current.deviceId || 'default';
+    if (formatCache[cacheKey]) {
+      formats = formatCache[cacheKey];
+    } else {
+      formatSelect.innerHTML = '<option>Detecting…</option>';
+      formats = await probeFormats(track);
+      if (formats.length > 0) formatCache[cacheKey] = formats;
+    }
+  }
+  buildFormatSelect(formats, current);
+}
+
+function buildFormatSelect(formats, current) {
+  formatSelect.innerHTML = '';
+  const curKey = `${current.width}x${current.height}@${Math.round(current.frameRate)}`;
+  let hasCurrent = false;
+  if (formats && formats.length > 0) {
+    formats.forEach(([w, h, fps]) => {
+      const opt = document.createElement('option');
+      opt.value = `${w},${h},${fps}`;
+      opt.textContent = `${w}×${h} @${fps}`;
+      if (`${w}x${h}@${fps}` === curKey) { opt.selected = true; hasCurrent = true; }
+      formatSelect.appendChild(opt);
+    });
+  }
+  if (!hasCurrent) {
+    const opt = document.createElement('option');
+    opt.value = `${current.width},${current.height},${Math.round(current.frameRate)}`;
+    opt.textContent = `${current.width}×${current.height} @${Math.round(current.frameRate)}`;
+    opt.selected = true;
+    formatSelect.prepend(opt);
+  }
+}
+
+formatSelect.addEventListener('change', async () => {
+  const [w, h, fps] = formatSelect.value.split(',').map(Number);
+  const track = currentStream?.getVideoTracks()[0];
+  if (!track) return;
+  try {
+    await track.applyConstraints({ width: { exact: w }, height: { exact: h }, frameRate: { ideal: fps } });
+    const s = track.getSettings();
+    showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
+  } catch (err) { toast('Format not supported: ' + err.message); }
+});
+
+/* ─── PTZ toggle ─────────────────────────────────────────────── */
+async function checkPTZServer() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/status`, { signal: AbortSignal.timeout(2000) });
+    const data = await res.json();
+    return data.connected === true;
+  } catch { return false; }
+}
+
+function setPtzUI(connected) {
+  ptzConnected = connected;
+  controlsPanel.classList.toggle('disabled', !connected);
+  if (!ptzEnabled) {
+    ptzStatusMsg.className = 'ptz-badge idle'; ptzStatusMsg.textContent = 'Off';
+  } else if (connected) {
+    ptzStatusMsg.className = 'ptz-badge ok'; ptzStatusMsg.textContent = '● Connected';
+  } else {
+    ptzStatusMsg.className = 'ptz-badge warn'; ptzStatusMsg.textContent = 'Run start_ptz.command';
+  }
+}
+
+ptzToggle.addEventListener('click', async () => {
+  ptzEnabled = !ptzEnabled;
+  ptzToggle.classList.toggle('on', ptzEnabled);
+  if (ptzEnabled) {
+    ptzStatusMsg.className = 'ptz-badge idle'; ptzStatusMsg.textContent = 'Connecting…';
+    const ok = await checkPTZServer();
+    setPtzUI(ok);
+    if (ok) {
+      toast('Pan/tilt connected');
+      loadSettings();
+      ptzPollTimer = setInterval(async () => { const s = await checkPTZServer(); setPtzUI(s); }, 10000);
+    } else {
+      toast('Server not found — run start_ptz.command');
+    }
+  } else {
+    clearInterval(ptzPollTimer); ptzPollTimer = null;
+    ptzConnected = false; setPtzUI(false);
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--text-dim)">Enable Pan/Tilt to load settings…</p>';
+    closeSettings();
+    toast('Pan/tilt disabled');
+  }
+});
+
+if (window.location.port === '9090' || window.location.origin.includes('localhost:9090')) {
+  ptzEnabled = true;
+  ptzToggle.classList.add('on');
+  checkPTZServer().then(ok => {
+    setPtzUI(ok);
+    if (ok) { loadSettings(); ptzPollTimer = setInterval(async () => setPtzUI(await checkPTZServer()), 10000); }
+  });
+}
+
+/* ─── PTZ commands ───────────────────────────────────────────── */
+async function sendPTZ(pan, tilt) {
+  if (!ptzConnected) return;
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/ptz`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pan, tilt }),
+    });
+    const data = await res.json();
+    if (!data.ok) toast('PTZ error');
+  } catch { toast('PTZ request failed'); }
+}
+async function sendReset() {
+  if (!ptzConnected) return;
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/reset`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) toast('Reset to center'); else toast('Reset failed');
+  } catch { toast('Reset request failed'); }
+}
+
+const dirMap = {
+  up: () => sendPTZ(0, speed()), down: () => sendPTZ(0, -speed()),
+  left: () => sendPTZ(-speed(), 0), right: () => sendPTZ(speed(), 0),
+  home: () => sendReset(),
+};
+function speed() { return parseInt(speedSlider.value); }
+
+document.querySelectorAll('.hud-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('mousedown', e => { e.preventDefault(); btn.classList.add('active'); });
+  btn.addEventListener('mouseup', () => btn.classList.remove('active'));
+  btn.addEventListener('mouseleave', () => btn.classList.remove('active'));
+  btn.addEventListener('click', () => { if (dirMap[dir]) dirMap[dir](); });
+  let hold = null;
+  btn.addEventListener('mousedown', () => { if (dir === 'home') return; hold = setInterval(() => { if (dirMap[dir]) dirMap[dir](); }, 250); });
+  const stop = () => { clearInterval(hold); hold = null; };
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+});
+document.getElementById('homeBtn').addEventListener('click', sendReset);
+
+const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', KeyH: 'home' };
+const activeKeys = new Set();
+let keyRepeat = null;
+function processKeys() { activeKeys.forEach(d => { if (dirMap[d]) dirMap[d](); }); }
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'KeyM') { if (micActive) toggleMute(); else startAudio(); return; }
+  if (e.code === 'KeyF') { toggleFullscreen(); return; }
+  const dir = keyMap[e.code]; if (!dir) return; e.preventDefault();
+  const btn = document.querySelector(`.hud-btn[data-dir="${dir}"]`); if (btn) btn.classList.add('active');
+  if (!activeKeys.has(dir)) { activeKeys.add(dir); processKeys(); if (!keyRepeat && dir !== 'home') keyRepeat = setInterval(processKeys, 250); }
+});
+document.addEventListener('keyup', e => {
+  const dir = keyMap[e.code]; if (!dir) return;
+  const btn = document.querySelector(`.hud-btn[data-dir="${dir}"]`); if (btn) btn.classList.remove('active');
+  activeKeys.delete(dir);
+  if (activeKeys.size === 0 && keyRepeat) { clearInterval(keyRepeat); keyRepeat = null; }
+});
+
+/* ─── Camera settings ────────────────────────────────────────── */
+const SETTING_LABELS = { brightness:'Brightness', contrast:'Contrast', saturation:'Saturation', sharpness:'Sharpness' };
+
+async function loadSettings() {
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/settings`);
+    const data = await res.json();
+    buildSettingsUI(data.settings || []);
+  } catch {
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--text-dim)">Failed to load settings</p>';
+  }
+}
+
+function buildSettingsUI(settings) {
+  settingsContainer.innerHTML = '';
+  if (settings.length === 0) {
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--text-dim)">No adjustable settings</p>';
+    return;
+  }
+  settings.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'setting-row';
+    const label = document.createElement('label');
+    const displayName = SETTING_LABELS[s.name] || s.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    label.innerHTML = `<span>${displayName}</span><span class="val" id="sval-${s.name}">${s.current}</span>`;
+    const input = document.createElement('input');
+    input.type = 'range'; input.min = s.min; input.max = s.max; input.value = s.current;
+    let debounce = null;
+    input.addEventListener('input', () => {
+      document.getElementById(`sval-${s.name}`).textContent = input.value;
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        fetch(`${PTZ_SERVER}/api/setting`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: s.name, value: parseInt(input.value) }),
+        }).catch(() => toast(`Failed to set ${displayName}`));
+      }, 150);
+    });
+    row.appendChild(label); row.appendChild(input);
+    settingsContainer.appendChild(row);
+  });
+}
+
+document.getElementById('resetSettingsBtn').addEventListener('click', async () => {
+  if (!ptzConnected) { toast('PTZ not connected'); return; }
+  try {
+    const res = await fetch(`${PTZ_SERVER}/api/settings/reset`, { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) { toast('Settings reset to defaults'); loadSettings(); }
+    else toast('Reset failed');
+  } catch { toast('Reset request failed'); }
+});
+
+/* ─── Microphone & Spectrum ──────────────────────────────────── */
+const micToggleBtn = document.getElementById('micToggle');
+const micLevelEl   = document.getElementById('micLevel');
+const specCanvas   = document.getElementById('spectrumCanvas');
+const specCtx      = specCanvas.getContext('2d');
+const specOffMsg   = document.getElementById('specOffMsg');
+
+let audioCtx = null, audioStream = null, analyser = null, micSource = null;
+let micMuted = false, micActive = false, spectrumRAF = null, spectrumEnabled = true;
+
+async function findMatchingAudioDevice() {
+  const camLabel = (camSelect.selectedOptions[0]?.textContent || '').toLowerCase();
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const audioInputs = devices.filter(d => d.kind === 'audioinput' && d.deviceId);
+  if (audioInputs.length === 0) return null;
+  if (camLabel.match(/046d:0994|orbit|logitech/)) {
+    const match = audioInputs.find(d => {
+      const l = (d.label || '').toLowerCase();
+      return l.includes('046d:0994') || l.includes('orbit') || (l.includes('usb audio') && !l.includes('headphone'));
+    });
+    if (match) return match.deviceId;
+  }
+  const words = camLabel.split(/[\s\-_()]+/).filter(w => w.length > 3);
+  for (const dev of audioInputs) {
+    if (words.some(w => (dev.label || '').toLowerCase().includes(w))) return dev.deviceId;
+  }
+  return null;
+}
+
+async function startAudio() {
+  try {
+    const audioDeviceId = await findMatchingAudioDevice();
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: audioDeviceId ? { deviceId: { exact: audioDeviceId } } : true });
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    micSource = audioCtx.createMediaStreamSource(audioStream);
+    micSource.connect(analyser);
+    micActive = true; micMuted = false;
+    micToggleBtn.classList.add('active');
+    micToggleBtn.textContent = '🎤';
+    specOffMsg.style.display = 'none';
+    drawSpectrum();
+  } catch (err) { toast('Mic error: ' + err.message); }
+}
+
+function stopAudio() {
+  micActive = false;
+  if (spectrumRAF) { cancelAnimationFrame(spectrumRAF); spectrumRAF = null; }
+  if (micSource) { micSource.disconnect(); micSource = null; }
+  if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+  analyser = null;
+  micToggleBtn.classList.remove('active', 'muted');
+  micToggleBtn.textContent = '🎤';
+  micLevelEl.style.width = '0%';
+  specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+  specOffMsg.style.display = '';
+}
+
+function toggleMute() {
+  if (!audioStream) return;
+  micMuted = !micMuted;
+  audioStream.getAudioTracks().forEach(t => { t.enabled = !micMuted; });
+  micToggleBtn.classList.toggle('muted', micMuted);
+  micToggleBtn.classList.toggle('active', !micMuted);
+  micToggleBtn.textContent = micMuted ? '🔇' : '🎤';
+  if (micMuted) { micLevelEl.style.width = '0%'; }
+}
+
+micToggleBtn.addEventListener('click', () => {
+  if (!micActive) startAudio();
+  else toggleMute();
+});
+micToggleBtn.addEventListener('dblclick', () => { if (micActive) stopAudio(); });
+
+const specToggleBtn = document.getElementById('specToggle');
+specToggleBtn.addEventListener('click', () => {
+  spectrumEnabled = !spectrumEnabled;
+  specToggleBtn.classList.toggle('active', spectrumEnabled);
+  if (!spectrumEnabled) specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+});
+
+function drawSpectrum() {
+  if (!analyser || !micActive) return;
+  spectrumRAF = requestAnimationFrame(drawSpectrum);
+  const bufLen = analyser.frequencyBinCount;
+  const data = new Uint8Array(bufLen);
+  analyser.getByteFrequencyData(data);
+  const W = specCanvas.offsetWidth || 400;
+  const H = specCanvas.offsetHeight || 48;
+  if (specCanvas.width !== W) specCanvas.width = W;
+  if (specCanvas.height !== H) specCanvas.height = H;
+  specCtx.clearRect(0, 0, W, H);
+
+  if (micMuted) { micLevelEl.style.width = '0%'; return; }
+
+  const barCount = Math.min(bufLen, 64);
+  const barW = Math.max(1, (W / barCount) - 1);
+  const gap = (W - barW * barCount) / (barCount + 1);
+  let rms = 0;
+
+  for (let i = 0; i < barCount; i++) {
+    const v = data[i] / 255;
+    rms += v * v;
+    if (spectrumEnabled) {
+      const barH = v * H;
+      const x = gap + i * (barW + gap);
+      const grad = specCtx.createLinearGradient(x, H, x, H - barH);
+      grad.addColorStop(0,   'rgba(255,60,0,0.75)');
+      grad.addColorStop(0.5, 'rgba(255,140,0,0.85)');
+      grad.addColorStop(1,   'rgba(255,230,50,0.95)');
+      specCtx.fillStyle = grad;
+      specCtx.fillRect(x, H - barH, barW, barH);
+      specCtx.fillStyle = 'rgba(255,255,180,0.6)';
+      specCtx.fillRect(x, H - barH - 1, barW, 1);
+    }
+  }
+
+  rms = Math.sqrt(rms / barCount);
+  micLevelEl.style.width = Math.min(100, rms * 150).toFixed(0) + '%';
+  micLevelEl.style.background = rms > 0.6 ? 'var(--red)' : rms > 0.3 ? 'var(--amber)' : 'var(--cyan)';
+}
+
+/* ─── Fullscreen ─────────────────────────────────────────────── */
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+function toggleFullscreen() {
+  const el = document.getElementById('videoCard');
+  if (!document.fullscreenElement) {
+    el.requestFullscreen().catch(() => {});
+    fullscreenBtn.textContent = '✕';
+    fullscreenBtn.title = 'Exit fullscreen (F)';
+  } else {
+    document.exitFullscreen();
+  }
+}
+fullscreenBtn.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    fullscreenBtn.textContent = '⛶';
+    fullscreenBtn.title = 'Fullscreen (F)';
+  }
+});
+
+/* ─── ? Popover ──────────────────────────────────────────────── */
+const kbdBtn     = document.getElementById('kbdBtn');
+const kbdPopover = document.getElementById('kbdPopover');
+kbdBtn.addEventListener('click', e => { e.stopPropagation(); kbdPopover.classList.toggle('open'); });
+document.addEventListener('click', () => kbdPopover.classList.remove('open'));
+
+/* ─── Theme toggle ───────────────────────────────────────────── */
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon   = document.getElementById('themeIcon');
+const themeLabel  = document.getElementById('themeLabel');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const isDark = theme === 'dark';
+  themeIcon.textContent  = isDark ? '🌙' : '☀️';
+  themeLabel.textContent = isDark ? 'Dark' : 'Light';
+  localStorage.setItem('orbitTheme', theme);
+}
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+// Restore saved preference, defaulting to light
+applyTheme(localStorage.getItem('orbitTheme') || 'light');
+
+/* ─── Init ───────────────────────────────────────────────────── */
+enumerateCameras();
+</script>
+</body>
+</html>

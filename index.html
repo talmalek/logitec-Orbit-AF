@@ -103,7 +103,11 @@
     padding: 2px 7px;
     border-radius: 3px;
     z-index: 5;
+    opacity: 1;
+    transition: opacity .6s;
   }
+  .video-info.hidden { opacity: 0; }
+  .screen-overlay:hover .video-info.hidden { opacity: 1; }
 
   /* ── Each control is independently positioned inside .tv ── */
   .tv-el {
@@ -129,22 +133,24 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    color: rgba(60,40,20,.7);
+    color: rgba(220,200,170,.8);
     text-align: center;
   }
   .cam-wrap select {
     width: 90%;
     padding: 2px 3px;
     border-radius: 4px;
-    border: 1px solid rgba(0,0,0,.25);
-    background: rgba(255,255,255,.35);
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(0,0,0,.35);
     backdrop-filter: blur(2px);
-    color: #3a2a1a;
+    color: #e8dcc8;
     font-size: 7px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
+    outline: none;
   }
+  .cam-wrap select:focus { border-color: var(--accent); }
 
   /* D-Pad */
   .dpad-wrap {
@@ -232,8 +238,13 @@
     width: 90%;
     justify-content: center;
   }
-  .speed-row input[type="range"] { width: 40px; accent-color: var(--accent); height: 2px; }
-  .speed-row span { font-size: 5px; color: rgba(60,40,20,.6); font-weight: 600; }
+  .speed-row input[type="range"] { width: 36px; accent-color: var(--accent); height: 2px; }
+  .speed-row .spd-lbl { font-size: 5px; color: rgba(220,200,170,.6); font-weight: 600; }
+  .speed-val {
+    font-size: 7px; font-weight: 700;
+    color: var(--accent);
+    min-width: 10px; text-align: center;
+  }
 
   /* Format selector */
   .fmt-wrap {
@@ -247,35 +258,44 @@
     width: 90%;
     padding: 2px 3px;
     border-radius: 4px;
-    border: 1px solid rgba(0,0,0,.25);
-    background: rgba(255,255,255,.35);
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(0,0,0,.35);
     backdrop-filter: blur(2px);
-    color: #3a2a1a;
+    color: #e8dcc8;
     font-size: 7px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
+    outline: none;
   }
+  .fmt-wrap select:focus { border-color: var(--accent); }
 
-  /* PTZ toggle row */
-  .ptz-row {
+  /* PTZ connection card */
+  .ptz-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+  }
+  .ptz-card-row {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     justify-content: center;
   }
-  .ptz-lbl { font-size: 7px; color: rgba(60,40,20,.7); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .ptz-lbl { font-size: 7px; color: rgba(220,200,170,.8); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
   .toggle-track {
     position: relative;
     width: 28px;
     height: 14px;
-    background: linear-gradient(to bottom, #666, #444);
+    background: linear-gradient(to bottom, #555, #333);
     border-radius: 7px;
     cursor: pointer;
     transition: background .3s;
     box-shadow: inset 0 1px 3px rgba(0,0,0,.4);
   }
-  .toggle-track.on { background: linear-gradient(to bottom, #5a5, var(--green)); }
+  .toggle-track.on { background: linear-gradient(to bottom, #3a7, var(--green)); }
   .toggle-thumb {
     position: absolute;
     top: 1.5px; left: 1.5px;
@@ -287,35 +307,86 @@
   }
   .toggle-track.on .toggle-thumb { transform: translateX(14px); }
 
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #666;
-    transition: background .3s;
+  .ptz-status-msg {
+    font-size: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-align: center;
+    padding: 2px 5px;
+    border-radius: 3px;
+    max-width: 100%;
+    line-height: 1.3;
   }
-  .status-dot.connected { background: var(--green); box-shadow: 0 0 5px #4CAF50aa; }
-  .status-dot.error { background: var(--red); box-shadow: 0 0 5px var(--red); }
+  .ptz-status-msg.ok   { color: var(--green); }
+  .ptz-status-msg.warn { color: #ff9800; }
+  .ptz-status-msg.idle { color: rgba(220,200,170,.45); }
 
   /* Settings button */
   .settings-btn {
     padding: 3px 8px;
     border-radius: 4px;
-    border: 1px solid rgba(0,0,0,.25);
-    background: rgba(255,255,255,.3);
-    color: rgba(60,40,20,.8);
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(0,0,0,.3);
+    color: rgba(220,200,170,.85);
     font-size: 7px;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 3px;
+    transition: background .2s, border-color .2s;
+    outline: none;
   }
-  .settings-btn:hover { background: rgba(255,255,255,.5); }
+  .settings-btn:hover { background: rgba(255,255,255,.15); border-color: var(--accent); }
   .settings-btn .gear { font-size: 10px; }
 
   /* Disabled state */
   .tv-el.disabled .dpad,
   .tv-el.disabled .speed-row { opacity: .3; pointer-events: none; }
+
+  /* ? shortcut button + popover */
+  .kbd-wrap {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .kbd-btn {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,.2);
+    background: rgba(255,255,255,.35);
+    color: rgba(0,0,0,.5);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .kbd-btn:hover { background: rgba(255,255,255,.6); }
+  .kbd-popover {
+    display: none;
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30,20,10,.95);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    line-height: 2;
+  }
+  .kbd-popover.open { display: block; }
+  .kbd-popover kbd {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    color: #fff;
+  }
 
   /* ── Settings drawer (below the TV) ── */
   .settings-drawer {
@@ -370,10 +441,19 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 28%;
+    height: 100%;
     z-index: 5;
     pointer-events: none;
-    opacity: .7;
+    opacity: .85;
+  }
+
+  /* ── Spectrum strip (below video frame, outside screen-overlay) ── */
+  .spectrum-strip {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: 0 0 4px 4px;
   }
 
   /* ── Mic / Mute control ── */
@@ -383,28 +463,26 @@
     gap: 4px;
     justify-content: center;
   }
-  .mic-lbl { font-size: 7px; color: rgba(60,40,20,.7); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .mic-lbl { font-size: 7px; color: rgba(220,200,170,.85); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
   .mic-icon {
-    font-size: 12px;
+    font-size: 11px;
     cursor: pointer;
-    width: 22px; height: 22px;
+    width: 20px; height: 20px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(to bottom, #666, #444);
-    box-shadow: inset 0 1px 3px rgba(0,0,0,.4);
+    background: linear-gradient(to bottom, #555, #333);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.1);
     transition: background .3s;
     border: none;
-    color: #ccc;
-    position: relative;
+    color: #bbb;
   }
   .mic-icon.muted { background: linear-gradient(to bottom, #a33, var(--red)); color: #fff; }
-  .mic-icon.active { background: linear-gradient(to bottom, #5a5, var(--green)); color: #fff; }
+  .mic-icon.active { background: linear-gradient(to bottom, #3a7, var(--green)); color: #fff; }
   .mic-level {
-    width: 28px; height: 6px;
-    background: #333;
+    width: 24px; height: 5px;
+    background: rgba(0,0,0,.4);
     border-radius: 3px;
     overflow: hidden;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
   }
   .mic-level-fill {
     height: 100%;
@@ -417,21 +495,20 @@
   .spec-toggle {
     font-size: 9px;
     cursor: pointer;
-    width: 16px; height: 16px;
+    width: 14px; height: 14px;
     border-radius: 3px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,.2);
-    border: 1px solid rgba(0,0,0,.25);
-    color: rgba(60,40,20,.7);
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    color: rgba(220,200,170,.7);
     padding: 0;
     line-height: 1;
     flex-shrink: 0;
   }
-  .spec-toggle.off { background: rgba(0,0,0,.25); color: rgba(255,255,255,.4); }
-  .spec-toggle:hover { background: rgba(255,255,255,.4); }
+  .spec-toggle.off { background: rgba(0,0,0,.3); color: rgba(255,255,255,.25); border-color: rgba(255,255,255,.1); }
+  .spec-toggle:hover { background: rgba(255,255,255,.25); }
 
   /* ── Banner & Toast ── */
-  .usb-banner {
     width: 100%; max-width: 850px; text-align: center;
     padding: 8px; font-size: 12px; display: none;
     border-radius: 8px; margin-bottom: 8px;
@@ -447,13 +524,8 @@
   }
   #toast.show { opacity: 1; }
 
-  /* ── Keyboard hint (below TV) ── */
-  .kbd-hint {
-    margin-top: 10px;
-    font-size: 10px;
-    color: rgba(0,0,0,.35);
-    text-align: center;
-  }
+  /* ── Keyboard hint (below TV) — now hidden, replaced by popover ── */
+  .kbd-hint { display: none; }
   kbd {
     background: rgba(255,255,255,.4);
     border: 1px solid rgba(0,0,0,.15);
@@ -474,74 +546,83 @@
   <!-- Video overlay on the screen -->
   <div class="screen-overlay" id="el-video" style="top:27.5%;left:29.5%;width:34%;height:44.5%">
     <video id="videoEl" autoplay playsinline muted></video>
-    <canvas class="audio-bar" id="spectrumCanvas"></canvas>
     <div class="glare"></div>
     <div class="video-info" id="videoOverlay">No camera</div>
   </div>
 
-  <!-- Each control is independently positioned -->
-  <div class="tv-el" id="el-camera" data-label="Camera Dropdown" style="top:16.5%;left:12%;width:14%">
+  <!-- Spectrum strip — sits just below the video frame -->
+  <canvas class="spectrum-strip" id="spectrumCanvas" style="top:72%;left:29.5%;width:34%;height:4%"></canvas>
+
+  <!-- Controls: all on the right panel -->
+  <div class="tv-el" id="el-camera" data-label="Camera Dropdown" style="top:16.5%;left:63%;width:14%">
     <div class="cam-wrap">
       <span class="ctrl-lbl">Camera</span>
-      <select id="cameraSelect"><option value="">Loading…</option></select>
+      <select id="cameraSelect" title="Select camera"><option value="">Loading…</option></select>
     </div>
   </div>
 
-  <div class="tv-el" id="el-dpad" data-label="D-Pad" style="top:57%;left:61.5%;width:14%">
+  <div class="tv-el" id="el-mic" data-label="Microphone" style="top:24%;left:63%;width:14%">
+    <div class="mic-row">
+      <span class="mic-lbl">Mic</span>
+      <button class="mic-icon" id="micToggle" title="Click to enable mic · Double-click to stop">&#127908;</button>
+      <div class="mic-level" title="Audio level"><div class="mic-level-fill" id="micLevel"></div></div>
+      <button class="spec-toggle" id="specToggle" title="Toggle spectrum analyzer on video">&#9641;</button>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-resolution" data-label="Resolution" style="top:30.5%;left:63%;width:14%">
+    <div class="fmt-wrap">
+      <span class="ctrl-lbl">Resolution</span>
+      <select id="formatSelect" title="Select resolution and frame rate"><option>–</option></select>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-ptz" data-label="PTZ Toggle" style="top:38.5%;left:63%;width:14%">
+    <div class="ptz-card">
+      <div class="ptz-card-row">
+        <span class="ptz-lbl">Pan/Tilt</span>
+        <div class="toggle-track" id="ptzToggle" title="Toggle pan/tilt server connection"><div class="toggle-thumb"></div></div>
+      </div>
+      <div class="ptz-status-msg idle" id="ptzStatusMsg">Off</div>
+    </div>
+  </div>
+
+  <div class="tv-el" id="el-dpad" data-label="D-Pad" style="top:50%;left:63%;width:14%">
     <div class="dpad-wrap">
       <div class="dpad">
         <button class="dpad-btn" data-dir="up" title="Tilt Up">&#9650;</button>
         <button class="dpad-btn" data-dir="left" title="Pan Left">&#9664;</button>
-        <button class="dpad-btn" data-dir="home" title="Home">&#8962;</button>
+        <button class="dpad-btn" data-dir="home" title="Reset to center">&#8962;</button>
         <button class="dpad-btn" data-dir="right" title="Pan Right">&#9654;</button>
         <button class="dpad-btn" data-dir="down" title="Tilt Down">&#9660;</button>
       </div>
     </div>
   </div>
 
-  <div class="tv-el" id="el-speed" data-label="Speed Slider" style="top:74.5%;left:59%;width:17.5%">
+  <div class="tv-el" id="el-speed" data-label="Speed Slider" style="top:65%;left:61.5%;width:17%">
     <div class="speed-row">
-      <span>Slow</span>
-      <input type="range" id="speedSlider" min="1" max="10" value="3">
-      <span>Fast</span>
+      <span class="spd-lbl">Slow</span>
+      <input type="range" id="speedSlider" min="1" max="10" value="3" title="Pan/tilt speed">
+      <span class="spd-lbl">Fast</span>
+      <span class="speed-val" id="speedVal">3</span>
     </div>
   </div>
 
-  <div class="tv-el" id="el-resolution" data-label="Resolution" style="top:28%;left:63.5%;width:10%">
-    <div class="fmt-wrap">
-      <span class="ctrl-lbl">Resolution</span>
-      <select id="formatSelect"><option>–</option></select>
-    </div>
-  </div>
-
-  <div class="tv-el" id="el-ptz" data-label="PTZ Toggle" style="top:69.5%;left:61.5%;width:14%">
-    <div class="ptz-row">
-      <span class="ptz-lbl">PTZ</span>
-      <div class="toggle-track" id="ptzToggle" title="Toggle PTZ"><div class="toggle-thumb"></div></div>
-      <div class="status-dot" id="statusDot"></div>
-    </div>
-  </div>
-
-  <div class="tv-el" id="el-mic" data-label="Microphone" style="top:22.5%;left:13%;width:12%">
-    <div class="mic-row">
-      <span class="mic-lbl">Mic</span>
-      <button class="mic-icon" id="micToggle" title="Toggle Microphone">&#127908;</button>
-      <div class="mic-level"><div class="mic-level-fill" id="micLevel"></div></div>
-      <button class="spec-toggle" id="specToggle" title="Toggle spectrum analyzer">&#9641;</button>
-    </div>
-  </div>
-
-  <div class="tv-el" id="el-settings" data-label="Settings Button" style="top:34%;left:61.5%;width:14%">
-    <button class="settings-btn" id="settingsBtn">
+  <div class="tv-el" id="el-settings" data-label="Settings Button" style="top:72%;left:63%;width:14%">
+    <button class="settings-btn" id="settingsBtn" title="Open camera image settings">
       <span class="gear">&#9881;</span> Settings
     </button>
   </div>
 </div>
 
-<div class="kbd-hint">
-  <kbd>&larr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&rarr;</kbd> arrows
-  &middot; <kbd>H</kbd> home
-  &middot; <kbd>M</kbd> mic mute
+<div class="kbd-wrap">
+  <div class="kbd-popover" id="kbdPopover">
+    <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> Pan / Tilt<br>
+    <kbd>H</kbd> Reset to center<br>
+    <kbd>M</kbd> Mic mute toggle<br>
+    <kbd>Ctrl</kbd>+<kbd>E</kbd> Position editor
+  </div>
+  <button class="kbd-btn" id="kbdBtn" title="Keyboard shortcuts">?</button>
 </div>
 
 <!-- Settings drawer -->
@@ -551,7 +632,7 @@
     <button id="resetSettingsBtn">Reset Defaults</button>
   </div>
   <div id="settingsContainer">
-    <p style="font-size:12px;color:var(--cream);opacity:.6">Enable PTZ to load settings…</p>
+    <p style="font-size:12px;color:var(--cream);opacity:.6">Enable Pan/Tilt to load settings…</p>
   </div>
 </div>
 
@@ -562,14 +643,18 @@ const PTZ_SERVER = 'http://localhost:9090';
 const videoEl       = document.getElementById('videoEl');
 const overlay       = document.getElementById('videoOverlay');
 const camSelect     = document.getElementById('cameraSelect');
-const statusDot     = document.getElementById('statusDot');
 const usbBanner     = document.getElementById('usbBanner');
 const ptzToggle     = document.getElementById('ptzToggle');
+const ptzStatusMsg  = document.getElementById('ptzStatusMsg');
 const controlsPanel = document.getElementById('el-dpad');
 const speedSlider   = document.getElementById('speedSlider');
+const speedValEl    = document.getElementById('speedVal');
 const settingsContainer = document.getElementById('settingsContainer');
 const formatSelect  = document.getElementById('formatSelect');
 const settingsDrawer = document.getElementById('settingsDrawer');
+
+/* Speed slider — show numeric value */
+speedSlider.addEventListener('input', () => { speedValEl.textContent = speedSlider.value; });
 
 let currentStream = null;
 let ptzEnabled    = false;
@@ -581,6 +666,15 @@ function toast(msg, ms = 2500) {
   el.textContent = msg; el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* Video info overlay — show on update, fade after 3s */
+let overlayFadeTimer = null;
+function showOverlay(text) {
+  overlay.textContent = text;
+  overlay.classList.remove('hidden');
+  clearTimeout(overlayFadeTimer);
+  overlayFadeTimer = setTimeout(() => overlay.classList.add('hidden'), 3000);
 }
 
 document.getElementById('settingsBtn').addEventListener('click', () => {
@@ -653,7 +747,7 @@ async function startCamera(deviceId, w, h, fps) {
       if (fps) c.frameRate = { ideal: fps };
       await track.applyConstraints(c);
       const s = track.getSettings();
-      overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+      showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
       return;
     } catch {}
   }
@@ -673,10 +767,10 @@ async function startCamera(deviceId, w, h, fps) {
     videoEl.srcObject = stream;
     const track = stream.getVideoTracks()[0];
     const s = track.getSettings();
-    overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+    showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
     await probeAndBuildFormats(track, s);
   } catch (err) {
-    overlay.textContent = 'Camera error';
+    showOverlay('Camera error');
     toast('Failed: ' + err.message);
   }
 }
@@ -795,7 +889,7 @@ formatSelect.addEventListener('change', async () => {
   try {
     await track.applyConstraints({ width: { exact: w }, height: { exact: h }, frameRate: { ideal: fps } });
     const s = track.getSettings();
-    overlay.textContent = `${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`;
+    showOverlay(`${s.width}×${s.height} @ ${Math.round(s.frameRate)}fps`);
   } catch (err) {
     toast('Format not supported: ' + err.message);
   }
@@ -812,12 +906,18 @@ async function checkPTZServer() {
 
 function setPtzUI(connected) {
   ptzConnected = connected;
-  statusDot.className = 'status-dot ' + (connected ? 'connected' : ptzEnabled ? 'error' : '');
   controlsPanel.classList.toggle('disabled', !connected);
-  if (ptzEnabled && !connected) {
-    usbBanner.className = 'usb-banner warning';
-    usbBanner.textContent = 'PTZ server not reachable — double-click start_ptz.command to start it';
+  if (!ptzEnabled) {
+    ptzStatusMsg.className = 'ptz-status-msg idle';
+    ptzStatusMsg.textContent = 'Off';
+    usbBanner.className = 'usb-banner';
+  } else if (connected) {
+    ptzStatusMsg.className = 'ptz-status-msg ok';
+    ptzStatusMsg.textContent = '● Connected';
+    usbBanner.className = 'usb-banner';
   } else {
+    ptzStatusMsg.className = 'ptz-status-msg warn';
+    ptzStatusMsg.textContent = 'Run start_ptz.command';
     usbBanner.className = 'usb-banner';
   }
 }
@@ -826,22 +926,23 @@ ptzToggle.addEventListener('click', async () => {
   ptzEnabled = !ptzEnabled;
   ptzToggle.classList.toggle('on', ptzEnabled);
   if (ptzEnabled) {
-    toast('Connecting to PTZ…', 1500);
+    ptzStatusMsg.className = 'ptz-status-msg idle';
+    ptzStatusMsg.textContent = 'Connecting…';
     const ok = await checkPTZServer();
     setPtzUI(ok);
     if (ok) {
-      toast('PTZ connected');
+      toast('Pan/tilt connected');
       loadSettings();
       ptzPollTimer = setInterval(async () => { const s = await checkPTZServer(); setPtzUI(s); }, 10000);
     } else {
-      toast('PTZ server not found — double-click start_ptz.command');
+      toast('Server not found — run start_ptz.command');
     }
   } else {
     clearInterval(ptzPollTimer); ptzPollTimer = null;
     ptzConnected = false; setPtzUI(false);
-    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--cream);opacity:.6">Enable PTZ to load settings…</p>';
+    settingsContainer.innerHTML = '<p style="font-size:12px;color:var(--cream);opacity:.6">Enable Pan/Tilt to load settings…</p>';
     settingsDrawer.classList.remove('open');
-    toast('PTZ disabled');
+    toast('Pan/tilt disabled');
   }
 });
 
@@ -1093,13 +1194,10 @@ function drawSpectrum() {
   const data = new Uint8Array(bufLen);
   analyser.getByteFrequencyData(data);
 
-  const rect = specCanvas.parentElement.getBoundingClientRect();
-  if (specCanvas.width !== Math.floor(rect.width) || specCanvas.height !== Math.floor(rect.height * 0.28)) {
-    specCanvas.width = Math.floor(rect.width);
-    specCanvas.height = Math.floor(rect.height * 0.28);
-  }
-  const W = specCanvas.width;
-  const H = specCanvas.height;
+  const W = specCanvas.offsetWidth || specCanvas.width || 200;
+  const H = specCanvas.offsetHeight || specCanvas.height || 24;
+  if (specCanvas.width !== W) specCanvas.width = W;
+  if (specCanvas.height !== H) specCanvas.height = H;
 
   specCtx.clearRect(0, 0, W, H);
 
@@ -1138,6 +1236,15 @@ function drawSpectrum() {
   micLevelEl.style.background = rms > 0.6 ? 'var(--red)' : rms > 0.3 ? 'var(--accent)' : 'var(--green)';
 }
 
+/* ─── ? Keyboard shortcuts popover ──────────────────────────────── */
+const kbdBtn     = document.getElementById('kbdBtn');
+const kbdPopover = document.getElementById('kbdPopover');
+kbdBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  kbdPopover.classList.toggle('open');
+});
+document.addEventListener('click', () => kbdPopover.classList.remove('open'));
+
 /* ─── Init ──────────────────────────────────────────────────────── */
 enumerateCameras();
 
@@ -1149,12 +1256,13 @@ enumerateCameras();
     'el-tvimg':      { el: document.getElementById('el-tvimg'),       label: 'TV Background' },
     'el-video':      { el: document.querySelector('.screen-overlay'), label: 'Video Frame' },
     'el-camera':     { el: document.getElementById('el-camera'),      label: 'Camera Dropdown' },
+    'el-mic':        { el: document.getElementById('el-mic'),          label: 'Microphone' },
+    'el-resolution': { el: document.getElementById('el-resolution'),  label: 'Resolution' },
+    'el-ptz':        { el: document.getElementById('el-ptz'),         label: 'Pan/Tilt Toggle' },
     'el-dpad':       { el: document.getElementById('el-dpad'),        label: 'D-Pad' },
     'el-speed':      { el: document.getElementById('el-speed'),       label: 'Speed Slider' },
-    'el-resolution': { el: document.getElementById('el-resolution'),  label: 'Resolution' },
-    'el-ptz':        { el: document.getElementById('el-ptz'),         label: 'PTZ Toggle' },
-    'el-mic':        { el: document.getElementById('el-mic'),          label: 'Microphone' },
     'el-settings':   { el: document.getElementById('el-settings'),    label: 'Settings Button' },
+    'spectrum':      { el: document.getElementById('spectrumCanvas'), label: 'Spectrum Strip' },
   };
 
   let editorOpen = false;

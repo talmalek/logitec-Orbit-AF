@@ -1,15 +1,29 @@
 # Logitech Orbit AF – Web Pan/Tilt Controller
 
-Browser-based pan/tilt controller for the **Logitech QuickCam Orbit AF** (VID `046d`, PID `0994`), wrapped in a retro TV interface.
-
-![Orbit AF Controller UI](screenshot.png)
+Browser-based pan/tilt controller for the **Logitech QuickCam Orbit AF** (VID `046d`, PID `0994`). Two UI options are available — a classic retro TV interface and a modern dark/light futuristic design.
 
 The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extension Unit (Unit ID `0x09`), which standard browser APIs don't expose. A single native macOS binary (`uvc_ctrl`) handles USB control transfers via IOKit — no Python, no pip, no sudo required.
 
+## UI Options
+
+### Retro TV (`index.html`)
+
+A vintage TV-themed interface with the camera feed inside a retro TV frame and controls on the side panel.
+
+![Retro TV UI](screenshot.png)
+
+### Dark / Light Futuristic (`index-dark.html`)
+
+A clean, modern interface with a dark/light theme toggle, responsive video frame, flame-coloured spectrum analyzer, and a collapsible settings drawer.
+
+![Futuristic UI](screenshot-dark.png)
+
 ## Features
 
-- **Retro TV interface** — camera feed displayed inside a vintage TV with controls on the side panel
-- **Standalone video viewer** — open `index.html` in Chrome to view any connected webcam, no server needed
+- **Two UI options** — classic retro TV (`index.html`) or modern futuristic dark/light design (`index-dark.html`)
+- **Light / dark mode** — toggle between themes in the futuristic UI; preference saved in localStorage
+- **Fullscreen mode** — one-click or press <kbd>F</kbd> to go fullscreen on the video
+- **Standalone video viewer** — open either HTML file in Chrome to view any connected webcam, no server needed
 - **Dynamic format detection** — automatically probes each camera for its actual supported resolutions and frame rates
 - **Highest resolution by default** — opens camera at its maximum supported resolution
 - **Multi-camera support** — switch between cameras from a dropdown (e.g., built-in + USB)
@@ -18,11 +32,11 @@ The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extensio
 - **Reset to defaults** — one-click factory reset for all image settings
 - **Microphone capture** — automatically detects and captures audio from the camera's built-in microphone
 - **Mute toggle** — mute/unmute mic with one click or the <kbd>M</kbd> key; stop capture with double-click
-- **Live spectrum analyzer** — real-time frequency bar visualization overlaid on the video frame
+- **Live spectrum analyzer** — real-time flame-coloured frequency bar visualization with a black background
 - **Level meter** — compact audio level bar next to the mic button, always visible regardless of analyzer state
-- **Spectrum toggle** — show/hide the video-frame equalizer without affecting the level meter
+- **Spectrum toggle** — show/hide the equalizer without affecting the level meter
 - **LED control** — on/off/blink/auto for the camera LED
-- **Position editor** — press Ctrl+E to visually reposition UI elements on the TV
+- **Position editor** — press Ctrl+E to visually reposition UI elements on the retro TV layout
 - **Zero dependencies** — single Objective-C file, compiled with system frameworks only
 
 ## Maintainers
@@ -42,7 +56,7 @@ The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extensio
 
 ### Option A: Double-click (easiest)
 
-1. **Open `index.html`** in Chrome → camera video works immediately at max resolution
+1. **Open `index.html`** (retro TV) or **`index-dark.html`** (futuristic) in Chrome → camera video works immediately at max resolution
 2. **Double-click `start_ptz.command`** in Finder → compiles (if needed) and starts PTZ server
 3. **Toggle PTZ on** in the web page → arrow controls and camera settings become active
 
@@ -91,8 +105,10 @@ clang -o uvc_ctrl uvc_ctrl.m -framework IOKit -framework CoreFoundation \
 ```
 logitec_Orbit_AF/
 ├── index.html            # Retro TV web UI (standalone camera viewer + PTZ controls)
-├── tv-bg.png             # TV background image used by the UI
-├── screenshot.png        # UI screenshot used in README
+├── index-dark.html       # Futuristic dark/light UI (responsive, fullscreen, theme toggle)
+├── tv-bg.png             # TV background image used by the retro UI
+├── screenshot.png        # Retro TV UI screenshot (used in README)
+├── screenshot-dark.png   # Futuristic UI screenshot (used in README)
 ├── uvc_ctrl.m            # Native macOS binary source (Obj-C, IOKit, AVFoundation)
 ├── start_ptz.command     # Double-clickable launcher for PTZ server
 ├── README.md             # This file
@@ -113,7 +129,9 @@ logitec_Orbit_AF/
 | Mic button (single click) | Start microphone / toggle mute |
 | Mic button (double-click) | Stop microphone capture entirely |
 | <kbd>M</kbd> key | Toggle mic mute |
+| <kbd>F</kbd> key | Toggle fullscreen (`index-dark.html`) |
 | ▩ button (next to level meter) | Show/hide spectrum analyzer on video frame |
+| 🌙 / ☀️ button | Toggle dark/light theme (`index-dark.html`) |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | Open position editor to adjust UI element layout |
 
 ## API Endpoints
@@ -169,7 +187,7 @@ The Logitech Orbit AF has a built-in microphone that macOS detects as a separate
 
 A real-time frequency bar visualization is overlaid on the bottom portion of the video frame when the mic is active and unmuted:
 
-- Bars are colour-coded green → amber → red by amplitude
+- Bars use a **flame colour gradient** — deep red at the base, burning orange in the middle, bright yellow-white tips
 - Use the **▩** button next to the level meter to show/hide the overlay without stopping the mic
 - The level meter remains active even when the overlay is hidden
 
