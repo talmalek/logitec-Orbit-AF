@@ -16,6 +16,11 @@ The camera's motorized pan/tilt is driven by a Logitech-proprietary UVC Extensio
 - **PTZ motor control** — pan/tilt via on-screen D-pad, keyboard arrows, or speed slider
 - **Camera image settings** — brightness, contrast, saturation, sharpness sliders (via USB)
 - **Reset to defaults** — one-click factory reset for all image settings
+- **Microphone capture** — automatically detects and captures audio from the camera's built-in microphone
+- **Mute toggle** — mute/unmute mic with one click or the <kbd>M</kbd> key; stop capture with double-click
+- **Live spectrum analyzer** — real-time frequency bar visualization overlaid on the video frame
+- **Level meter** — compact audio level bar next to the mic button, always visible regardless of analyzer state
+- **Spectrum toggle** — show/hide the video-frame equalizer without affecting the level meter
 - **LED control** — on/off/blink/auto for the camera LED
 - **Position editor** — press Ctrl+E to visually reposition UI elements on the TV
 - **Zero dependencies** — single Objective-C file, compiled with system frameworks only
@@ -105,6 +110,10 @@ logitec_Orbit_AF/
 | PTZ toggle | Connect/disconnect to PTZ server |
 | Settings button | Open camera settings drawer (brightness, contrast, etc.) |
 | Default button | Reset all image settings to factory defaults |
+| Mic button (single click) | Start microphone / toggle mute |
+| Mic button (double-click) | Stop microphone capture entirely |
+| <kbd>M</kbd> key | Toggle mic mute |
+| ▩ button (next to level meter) | Show/hide spectrum analyzer on video frame |
 | <kbd>Ctrl</kbd>+<kbd>E</kbd> | Open position editor to adjust UI element layout |
 
 ## API Endpoints
@@ -139,6 +148,30 @@ The binary also works as a standalone CLI tool:
 ./uvc_ctrl status            # check camera connection
 ./uvc_ctrl --help            # show all commands
 ```
+
+## Audio & Spectrum Analyzer
+
+The Logitech Orbit AF has a built-in microphone that macOS detects as a separate USB audio input ("Unknown USB Audio Device", 1 channel, 16 kHz). The web UI can capture and visualize it directly using the Web Audio API.
+
+### Mic controls
+
+| State | Button appearance | How to get there |
+|-------|-------------------|-----------------|
+| Off | Grey 🎤 | Initial state |
+| Active | Green 🎤 | Single click |
+| Muted | Red 🔇 | Click again (or press <kbd>M</kbd>) |
+| Stopped | Grey 🎤 | Double-click while active |
+
+- The page automatically tries to match the microphone to the currently selected camera (e.g. choosing the Orbit AF camera will prefer the USB audio input over the MacBook mic).
+- The small **level meter** bar always shows audio level when the mic is active — it is unaffected by the spectrum toggle.
+
+### Spectrum analyzer
+
+A real-time frequency bar visualization is overlaid on the bottom portion of the video frame when the mic is active and unmuted:
+
+- Bars are colour-coded green → amber → red by amplitude
+- Use the **▩** button next to the level meter to show/hide the overlay without stopping the mic
+- The level meter remains active even when the overlay is hidden
 
 ## Troubleshooting
 
